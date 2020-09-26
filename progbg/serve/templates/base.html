@@ -1,0 +1,10 @@
+<!doctype html>
+<title>ProgBG</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<nav>
+      <h1>Prog BG Graphs Page</h1>
+</nav>
+<section class="content">
+      <header> {% block header %}{% endblock %} </header>
+    {% block content %}{% endblock %}
+</section>

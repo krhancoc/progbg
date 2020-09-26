@@ -1,0 +1,42 @@
+"""CLI Module
+
+This module processes and handles all command line interface input
+and dispatches commands to the proper area
+
+"""
+# pylint: disable-msg=E0611,E0401
+
+import os
+from argparse import ArgumentParser
+
+from .core import execute_plan
+from .serve import create_server
+
+def cli_entry():
+    """Main entry point for the command line interface"""
+
+    parser = ArgumentParser(
+        description="A simple programmable benchmarking and graphing tool")
+    parser.add_argument("plan", help="Location of the plan.py file")
+    parser.add_argument(
+        "-p",
+        type=int,
+        help="Creates a server to serve the generated graphs at the port provided")
+    parser.add_argument(
+        "--no-exec",
+        action="store_true",
+        help="Do not re-run any executions \
+            (Note: This assume all output defined in graphs are already progbg format)")
+
+
+    args = parser.parse_args()
+    if not os.path.isfile(args.plan):
+        print("Issue finding the plan.py file/")
+        return
+
+    globs = execute_plan(args.plan, no_exec=args.no_exec)
+
+
+    if args.p:
+        create_server(globs['_sb_executions'], globs['_sb_graphs'],
+                      globs['_sb_figures'], os.path.abspath("graphs")).run(port = args.p)

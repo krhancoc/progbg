@@ -1,0 +1,2 @@
+recursive-include progbg/serve/templates *
+recursive-include progbg/serve/static *

@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block header %}
+<h1> Data for {{name}}</h1>
+{% endblock %}
+
+{% block content %}
+{% for exec_name, aggregate in graph.aggregation.items() %}
+<div>
+    <h3>{{exec_name}}</h3>
+    {% for k, vals in aggregate.items() %}
+    <table>
+        <h4>{{k}}</h4>
+        <tr>
+            <td>Key Name</td>
+            <td>Value Mean</td>
+            <td>Value STD</td>
+        </tr>
+        {% for key_name, attr in vals.items() %}
+        <tr>
+            <td>{{key_name}}</td>
+            <td>{{attr[0]}}</td>
+            <td>{{attr[1]}}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% endfor %}
+</dev>
+{% endfor %}
+{% endblock %}
+
