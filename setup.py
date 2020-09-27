@@ -2,17 +2,18 @@
 
 import setuptools
 
-with open("README.md", "r") as fh:
+with open("README.md", encoding='utf-8') as fh:
     long_description = fh.read()
 
 setuptools.setup(
         name="progbg",
-        version="0.0.1",
-        author="Ryan Hancock",
+        version="0.1",
+        author="Kenneth R Hancock",
         author_email="krhancoc@uwaterloo.ca",
         license='MIT',
         description="A programmable way help quickly run and produce benchmarks and create graphs",
-        long_description_content_type="text/markdown",
+        long_description=long_description,
+        long_description_content_type='text/markdown',
         url="https://github.com/krhancoc/progbg",
         packages=setuptools.find_packages(),
         include_package_data=True,

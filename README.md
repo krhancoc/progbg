@@ -1,5 +1,5 @@
 `progbg`
-======
+========
 The **Prog**rammable **B**enchmarker and **G**raphing Tool
 
 **The problem:**
