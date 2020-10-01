@@ -109,7 +109,7 @@ sb.plan_execution("my_execution",
                 var = [("x" ,range(0, 3, 1))]
             ),
             iterations = 5,
-            parse = sb.MatchParser("out",
+            parse = sb.MatchParser(
             {
                 "^Latency": (
                     ["avg", "max", "min"], func
