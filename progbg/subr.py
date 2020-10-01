@@ -1,13 +1,15 @@
+# pylint: disable-msg=W0102
 """Subroutines Module
 
 Useful helper functions
 """
-from typing import List, Dict, Tuple
 import itertools
+from pprint import pformat
+from typing import List, Dict, Tuple
 
 import numpy as np
 
-from .core import _sb_executions
+from .globals import _sb_executions
 
 Axes = Tuple[List[float], List[float], List[float]]
 def check_one_varying(benchmarks: List[Dict], extras: List[str]=[]):
@@ -18,7 +20,7 @@ def check_one_varying(benchmarks: List[Dict], extras: List[str]=[]):
     """
     execution = _sb_executions[benchmarks[0]['_execution_name']]
     varying = []
-    for rule in execution.parser.match_rules.values():
+    for rule in execution.bench.parser.match_rules.values():
         varying.extend(rule[0])
 
     varying.extend(extras)
@@ -39,21 +41,34 @@ def check_one_varying(benchmarks: List[Dict], extras: List[str]=[]):
 
 
 def aggregate_bench(group: List[Dict]) -> Dict:
+    """Aggregation helper function"""
     first = dict(group[0])
-    for k, v in first.items():
+    for k, val in first.items():
+        if not val:
+            first[k] = []
+            continue
+
         try:
-            first[k] = [float(v)]
+            first[k] = [float(val)]
         except ValueError:
-            first[k] = [v]
+            first[k] = [val]
 
     for i in range(1, len(group)):
-        for k, v in first.items():
-            if isinstance(first[k][0], str):
-                first[k].append(group[i][k])
-            else:
-                first[k].append(float(group[i][k]))
+        for k in first.keys():
 
-    for k, v in first.items():
+            if not group[i][k]:
+                continue
+
+            try:
+                val = float(group[i][k])
+                first[k].append(val)
+            except ValueError:
+                first[k].append(group[i][k])
+
+    for k in first.keys():
+        if not len(first[k]):
+            continue
+
         if not isinstance(first[k][0], str):
             first[k] = (np.mean(first[k]), np.std(first[k]))
 
@@ -61,9 +76,18 @@ def aggregate_bench(group: List[Dict]) -> Dict:
 
 
 def retrieve_axes(benchmarks: List[Dict], x_name: str, y_name: str) -> Axes:
-    grouped = itertools.groupby(benchmarks, lambda x: x[x_name])
+    """
+    Retrieve associated axes for a given benchmark
+    """
     combined = dict()
-    for key, group in grouped:
+    grouped = dict()
+    for benchmark in benchmarks:
+        if benchmark[x_name] in grouped:
+            grouped[benchmark[x_name]].append(benchmark)
+        else:
+            grouped[benchmark[x_name]] = [benchmark]
+
+    for key, group in grouped.items():
         combined[float(key)] = aggregate_bench(list(group))
 
     x_values = []
@@ -75,11 +99,3 @@ def retrieve_axes(benchmarks: List[Dict], x_name: str, y_name: str) -> Axes:
         y_std.append(benchmark[y_name][1])
 
     return (x_values, y_values, y_std, combined)
-
-def backend_format_to_file(path):
-    return "-".join(path.split("/"))
-
-def backend_format_reverse(path):
-    return "/".join(path.split("-"))
-
-

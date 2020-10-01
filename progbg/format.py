@@ -1,21 +1,23 @@
+# pylint: disable-msg=W0613
+"""Formatting Module"""
+
 from typing import Dict, Union
 
 import matplotlib as mpl
 
 SimpleType = Union[int, str, float]
 
-
-def change_height(fig: mpl.figure.Figure, axes: mpl.axes.Axes, arg: float):
+def _change_height(fig: mpl.figure.Figure, axes: mpl.axes.Axes, arg: float):
     fig.set_figheight(arg)
 
 
-def change_width(fig: mpl.figure.Figure, axes: mpl.axes.Axes, arg: float):
+def _change_width(fig: mpl.figure.Figure, axes: mpl.axes.Axes, arg: float):
     fig.set_figwidth(arg)
 
 
 supported_options = {
-    "height": change_height,
-    "width": change_width
+    "height": _change_height,
+    "width": _change_width
 }
 
 default_formatter = {}
@@ -23,6 +25,7 @@ default_formatter = {}
 
 def check_formatter(formatter: Dict[str, SimpleType]):
     """
+    Checks options for formatting
     """
     if not formatter:
         return
@@ -36,6 +39,9 @@ def check_formatter(formatter: Dict[str, SimpleType]):
 
 
 def format_fig(fig, axes, formatter):
+    """
+    Run specified format functions on figure
+    """
     if not formatter:
         formatter = default_formatter
 

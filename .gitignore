@@ -10,6 +10,7 @@ tags
 out/
 graphs
 instance
+out.db
 
 *.egg-info
 *.swp

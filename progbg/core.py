@@ -5,7 +5,7 @@
 This module contains all the related API calls for creating and managing
 the plan.py files, graphing is handled within graphing.py.
 
-A special case we have to handling is the handling of global variables
+sA special case we have to handling is the handling of global variables
 within ProgBG. Since we dynamically pull in a users file, their module
 has a different set of globals then ours, so upon importing their
 python file we must edit our globals to be equivalent to theirs.
@@ -18,134 +18,42 @@ import re
 import importlib
 import sys
 import inspect
-import itertools
-from typing import List, Dict, Tuple
+import sqlite3
+import types
+from typing import List, Dict
 from pprint import pformat
+from functools import cached_property
 
 import matplotlib.pyplot as plt
 
 from .format import format_fig, check_formatter
+from .util import Backend, Variables, dump_obj, error
+from .globals import _sb_registered_benchmarks, _sb_registered_backend
+from .globals import _sb_executions, _sb_graphs, _sb_rnames
+from .globals import _sb_figures, GRAPHS_DIR
+from .globals import _EDIT_GLOBAL_TABLE
 
-_sb_registered_benchmarks = {}
-_sb_registered_backend = {}
-_sb_executions = {}
-_sb_graphs = {}
-_sb_figures = {}
-"""Registration globals
+def _retrieve_named_backends(back_obj):
+    named = []
+    for backend in back_obj.backends:
+        cls = _sb_registered_backend[backend]
+        required_init = inspect.getfullargspec(cls.init).args
+        required_uninit = inspect.getfullargspec(cls.uninit).args
+        named.extend(required_init + required_uninit)
 
-These globals are used by the plan_* functions, as well as the
-register_* decoraters to keep track of what has been planned
-by the user
-"""
-
-GRAPHS_DIR = "graphs"
-"""str: default graphs directory"""
-PROGBG_EXTENSION = ".progbg"
-"""str: Extension used for file already parsed by parsers"""
+    return named
 
 
-# String versions of the dictionaries
-_EDIT_GLOBAL_TABLE = {
-    "_sb_registered_benchmarks": _sb_registered_benchmarks,
-    "_sb_registered_backend": _sb_registered_backend,
-    "_sb_executions": _sb_executions,
-    "_sb_graphs": _sb_graphs,
-    "_sb_figures": _sb_figures,
-}
-"""Globals Table
+def _retrieve_named_benchmarks(name):
+    cls = _sb_registered_benchmarks[name]
+    required_run = inspect.getfullargspec(cls.run).args[2:]
 
-Table to allow us to quickly access applicable global variables within 
-the globals() table
-"""
-
-_sb_rnames = ["_backend", "_execution_name", "_iter"]
-
-def _retrieve_backends(path):
-    backends = path.split('/')
-    return [ _sb_registered_backend[back] for back in backends ]
-
-def _backend_format_to_file(path):
-    return "-".join(path.split("/"))
-
-def _backend_format_reverse(path):
-    return "/".join(path.split("-"))
-
-class Variables:
-    """
-    Variables is a container class for variables for a given execution
-
-    This will define the permutations that can occur for those that utilize the
-    class (see Variables.produce_args documentation)
-    Attributes:
-        const: A dictionary of argument names to values that will be passed
-        var: A tuple of an argument name and some iterable object
-    """
-
-    def __init__(self, consts: Dict = None,
-                 var: List[Tuple[str, List]] = None) -> None:
-        if any([i in consts for i in _sb_rnames]) or (var[0] in _sb_rnames):
-            raise Exception(
-                "Cannot use a reserved name for a variable {}".format(
-                    pformat(_sb_rnames)))
-        for x in var:
-            if x[0] in consts:
-                raise Exception("Name defined as constant and varying: {}".format(
-                    x[0]))
-
-        self.consts = consts
-        self.var = var
-
-    def produce_args(self) -> List[Dict]:
-        """Produces a list of arguments given the consts and vars
-        Example:
-            Variables(
-                sb.Variables(
-                    consts = {
-                        "other" : 1
-                    },
-                    var = [("x" ,range(0, 3, 1)), ("test", range(0, 5, 2))]
-                ),
-
-            In this example this would produce args as follows:
-                { other = 1, x = 0, test = 0},
-                { other = 1, x = 0, test = 2},
-                { other = 1, x = 0, test = 4},
-                { other = 1, x = 1, test = 0},
-                ...
-                { other = 1, x = 2, test = 4},
-        """
-        key_names, ranges = zip(*self.var)
-        args = []
-        for perm in itertools.product(*ranges):
-            run_vars = dict(self.consts)
-            for i, k in enumerate(key_names):
-                run_vars[k] = perm[i]
-            args.append(run_vars)
-
-        return args
+    return required_run
 
 
-    def param_exists(self, name: str) -> bool:
-        """Checks if a variable is defined either as a constant or a varrying variable"""
-        return (name in self.consts) or any([ name == x[0] for x in self.var])
+def _retrieve_backends(back_obj):
+    return [ _sb_registered_backend[back] for back in back_obj.backends ]
 
-    def y_names(self) -> List[str]:
-        """Returns the names of varrying or responding variables"""
-        return [ x[0] for x in self.var ]
-
-    def const_names(self) -> List[str]:
-        """Returns names of constants"""
-        return self.consts.keys()
-
-    def __repr__(self) -> str:
-        return pformat(vars(self), width=30)
-
-def dump_obj(file: str, obj: Dict):
-    """Dump dictionary to file key=val"""
-    with open(file, 'w') as f:
-        for key, val in obj.items():
-            line = "{}={}\n".format(key, val)
-            f.write(line)
 
 def check_file_backend(file_name):
     """Checks what the backend of a given filename is
@@ -159,24 +67,20 @@ def check_file_backend(file_name):
 
     return chunks[2]
 
-
 class MatchParser:
     """MatchParser class takes regex matches and on success run a given function"""
-    def __init__(self, retrieve_dir: str, match_rules: Dict, save: str = None):
+    def __init__(self, match_rules: Dict):
         """Match parser init
         Arguments:
-            retrieve_dir: directory to retrieve output from a benchmark
             match_rules: Dictionary of regex to a tuple of a list output names
             and a function that will return values to bind to those names
-            save: Directory in which to save parsed results
         Example:
-            parse = sb.MatchParser("out",
+            parse = sb.MatchParser(
                 {
                     "^Latency": (
                         ["avg", "max", "min"], func
                     )
                 },
-                save = "out"
             )
 
             In the above example we take data from the out directory, take the line
@@ -184,18 +88,7 @@ class MatchParser:
             is a function that will output values which bind to these names.
             This means func must output a list of 3 values for this above example.
         """
-        if not os.path.isdir(retrieve_dir):
-            raise Exception(
-                "Retrieving from not a directory: {}".format(retrieve_dir))
-
-        self.retrieve_dir = retrieve_dir
         self.match_rules = match_rules
-        if save:
-            try:
-                os.mkdir(save)
-            except FileExistsError:
-                pass
-        self.save_to = save
         self.execution = None
 
     def _match(self, line: str, obj: Dict):
@@ -214,57 +107,156 @@ class MatchParser:
         return any([name in varfunc[0]
                     for varfunc in self.match_rules.values()])
 
+    def fields(self) -> List[str]:
+        """ Retrieve all named fields within the parser"""
+        return [item for sublist in self.match_rules.values() for item in sublist[0]]
 
-    def parse(self):
+    def parse(self, file, bench_args, backend_args):
         """Parse the execution"""
-        files = [
-            os.path.join(self.retrieve_dir, p) for p in os.listdir(
-                self.retrieve_dir) if p.startswith(self.execution.name)
-                and not p.endswith(PROGBG_EXTENSION)
-        ]
-        benchs = []
-        for file in files:
-            obj = {}
-            with open(file, 'r') as f:
-                for line in f:
-                    self._match(line, obj)
-                # Make sure to put constants in the data as well
-                for key, val in self.execution.bench.variables.consts.items():
-                    obj[key] = val
-                backend = check_file_backend(file)
-                if backend != None:
-                    for key, val in self.execution.backends[backend].consts.items():
-                        obj[key] = val
-            obj['_execution_name'] = self.execution.name
+        obj = {}
+        with open(file, 'r') as f:
+            for line in f:
+                self._match(line, obj)
+            # Make sure to put constants in the data as well
+            for key, val in bench_args.items():
+                obj[key] = val
 
+            if backend_args:
+                for key, val in backend_args.items():
+                    obj[key] = val
+
+            execution_name = file.split('/')[-1].split('_')[0]
+            execution = _sb_executions[execution_name]
+            obj['_execution_name'] = execution_name
             # We hold field names within our filename as well, things like iteration number
             # and var variable value
-            obj.update(self.execution.reverse_file_out(file))
-            if (self.save_to):
-                save_file = os.path.join(self.save_to, os.path.basename(file))
-                save_file += PROGBG_EXTENSION
-                dump_obj(save_file, obj)
+            obj.update(execution.reverse_file_out(file))
 
-            benchs.append(obj)
-        return benchs
+        return obj
+
 
 
 class Execution:
     """Execution class, see plan_execution documentation"""
-    def __init__(self, name: str, benchmark, parser, backends: List[str]):
+    def __init__(self, name: str, benchmark, backends: Dict, out: str):
         self.name = name
         self.bench = benchmark
-        self.parser = parser
-        self.backends = backends
+
+        if backends:
+            self.backends = [ Backend(k, v) for k, v in backends.items() ]
+        else:
+            self.backends = None
+
         self.run_benchmarks = None
+        self.out = out
+        self.cli_args = None
 
     def print(self, string):
         """Pretty printer for execution"""
-        print("[{} - {}]: {}".format(self.name, self.bench.name, string))
+        print("\033[1;31m[{} - {}]:\033[0m {}".format(self.name, self.bench.name, string))
+
+    @cached_property
+    def tables(self):
+        """
+        Generates the tables needed for the sqlite backend
+
+        Table names are in the form EXECNAME__BENCHNAME__BACKENDS
+        Composed backends are seperated by "_b_".  This is because characters
+        like "/" and "-" and ":" are not accepted by sqlite.
+        """
+        tables = {}
+        if self.backends:
+            for back_obj in self.backends:
+                fields_backends = _retrieve_named_backends(back_obj)
+                fields_benchmark = _retrieve_named_benchmarks(self.bench.name)
+                fields_parser = self.bench.parser.fields()
+                tablename = "{}__{}__{}".format(self.name,
+                        self.bench.name, back_obj.path_sql)
+                fields = fields_backends + fields_benchmark + fields_parser + _sb_rnames
+                tables[tablename] = sorted(fields)
+        else:
+            fields_benchmark = _retrieve_named_benchmarks(self.bench.name)
+            fields_parser = self.bench.parser.fields()
+            tablename = "{}__{}".format(self.name,
+                    self.bench.name)
+            fields = fields_benchmark + fields_parser + _sb_rnames
+            tables[tablename] = sorted(fields)
+
+        return tables
+
+    def _setup_tables(self):
+        conn = sqlite3.connect(self.out)
+        for name, vals in self.tables.items():
+            c = conn.cursor()
+            quotes = [ '"{}"'.format(val) for val in vals ]
+            exec_str = "CREATE TABLE {} ({});".format(name, ",".join(quotes))
+            try:
+                c.execute(exec_str)
+            except sqlite3.OperationalError:
+                exec_str = "DELETE FROM {}".format(name)
+                c.execute(exec_str)
+            conn.commit()
+            c.close()
+        conn.close()
+
+    # Constantly creating the connection is not so nice.
+    def _add_sql_row(self, obj):
+        conn = sqlite3.connect(self.out)
+        c = conn.cursor()
+        inserted = False
+        for name_full, fields in self.tables.items():
+            name = name_full.split('__')
+            if obj["_execution_name"] != name[0]:
+                continue
+
+            if obj["_workload"] != name[1]:
+                continue
+
+            if len(name) == 3:
+                sql_friendly = Backend.out_to_sql(obj["_backend"])
+                if sql_friendly != name[2]:
+                    continue
+
+                obj["_backend"] = sql_friendly
+
+            vals = []
+            for val in fields:
+                # We have to eliminate the first and last char as they are quotes
+                if val in obj:
+                    # If we do typing for object we would have to do it here?
+                    # When we get the fields we would also ask for typing
+                    # Its a feature that will probably need to be added sooner
+                    # over later
+                    vals.append('"{}"'.format(str(obj[val])))
+                else:
+                    vals.append("''")
+
+            quotes = [ '"{}"'.format(val.strip()) for val in fields ]
+            exec_str = "INSERT INTO {} ({})\nVALUES ({});".format(name_full,
+                    ",".join(quotes), ",".join(vals))
+
+            c.execute(exec_str)
+            conn.commit()
+            c.close()
+            inserted = True
+            break
+
+        conn.close()
+        if not inserted:
+            raise Exception("Object was not/could not be added to any table")
 
     def clean(self):
         """Cleans output directories"""
-        self.bench.clear_out()
+        if self.is_sql_backed():
+            self._setup_tables()
+        else:
+            try:
+                os.mkdir(self.out)
+            except:
+                pass
+
+            for path in os.listdir(self.out):
+                os.remove(os.path.join(self.out, path))
 
     def _merged_args(self, back_vars):
         benchmark = self.bench.variables.produce_args()
@@ -279,21 +271,37 @@ class Execution:
 
         return args
 
-    def out_file(self, path, backend_args, bench_args, iteration):
+    def out_file(self, back_obj, backend_args, bench_args, iteration):
         """Determine output filename given a some backend and bench arguments
 
         output is {Execution_name}_b_{BCK1-BCK2}_{BCKVARS}_{WRKVARS}
         """
         file = self.name
-        if path:
-            bench_name = _backend_format_to_file(path)
+        if back_obj:
+            bench_name = back_obj.path_out
             file += "_b_{}".format(bench_name)
-            for name in self.backends[path].y_names():
+            for name in back_obj.runtime_variables.y_names():
                 file += "_{}".format(backend_args[name])
+
         for name in self.bench.variables.y_names():
             file += "_{}".format(bench_args[name])
         file += "_{}".format(iteration)
-        return "{}/{}".format(self.bench.out_dir, file)
+
+        if self.is_sql_backed():
+            return "{}".format(file)
+
+        return "{}/{}".format(self.out, file)
+
+    def is_sql_backed(self):
+        """Checks if execution storage backend is sqlite3"""
+        return self.out.endswith('.db')
+
+    def _get_back_obj(self, path):
+        for back_obj in self.backends:
+            if path == back_obj.path_user:
+                return back_obj
+
+        return None
 
     def reverse_file_out(self, file: str) -> Dict:
         """Take a given file, and extracts variable information from it
@@ -309,8 +317,8 @@ class Execution:
             i += 1
             values['_backend'] = parts[i]
             i += 1
-            pathname = _backend_format_reverse(values['_backend'])
-            for name in self.backends[pathname].y_names():
+            back_obj = self._get_back_obj(Backend.out_to_user(values['_backend']))
+            for name in back_obj.runtime_variables.y_names():
                 values[name] = parts[i]
                 i += 1
 
@@ -325,56 +333,79 @@ class Execution:
 
         return values
 
-    def _execute(self, path, args, iteration):
-        benchmarker = _sb_registered_benchmarks[self.bench.name]
+    def _execute(self, back_obj, args, iteration, init = True):
+        if back_obj:
+            full_backend_args = args['backend']
+            backends = _retrieve_backends(back_obj)
+            for backend in backends:
+                required = inspect.getfullargspec(backend.init)
+                backend_args = { k:v for k,v in full_backend_args.items() if k in required }
+                if init:
+                    backend.init(**backend_args)
 
-        full_backend_args = args['backend']
-        backends = _retrieve_backends(path)
-        for backend in backends:
-            required = inspect.getfullargspec(backend.init)
-            backend_args = { k:v for k,v in full_backend_args.items() if k in required }
-            backend.init(**backend_args)
+        else:
+            full_backend_args = None
 
-        self.print("Executing backend with args: {}".format(pformat(full_backend_args)))
+        # We have to capture the output from this benchmark. I'm unsure whether to use
+        # a FIFO here.  Its a nice abstraction to use but I'm unsure the memory that
+        # this would hold. Worth testing another time.
         for bench_arg in args['benchmark']:
-            out_file = self.out_file(path, full_backend_args, bench_arg, iteration)
-            benchmarker.run(out_file, **bench_arg)
+            out_file = self.out_file(back_obj, full_backend_args, bench_arg, iteration)
+            backend_str = ""
+            if back_obj:
+                backend_str = back_obj.path_user
+            obj = self.bench.run(backend_str, out_file, bench_arg, full_backend_args)
+            if obj:
+                if self.is_sql_backed():
+                    self._add_sql_row(obj)
+                    os.remove(out_file)
+                else:
+                    dump_obj(out_file, obj)
 
-        for backend in reversed(backends):
-            backend.uninit()
+        if back_obj and init:
+            for backend in reversed(backends):
+                backend.uninit()
 
     def _execute_no_backend(self):
-        benchmarker = _sb_registered_benchmarks[self.bench.name]
         benchmark_args = self.bench.variables.produce_args()
         total_steps = len(benchmark_args) * self.bench.iterations
         i = 0
         for args in benchmark_args:
             for iteration in range(0, self.bench.iterations):
-                out_file = self.out_file(None, None, args, iteration)
-                benchmarker.run(out_file, **args)
+                self._execute(None, dict( benchmark = [args] ), iteration)
                 i += 1
                 self.print("[{}/{}]".format(i, total_steps))
 
     def _execute_with_backends(self):
-        for path, back_vars in self.backends.items():
-            args = self._merged_args(back_vars)
-            total_steps = len(args) * self.bench.iterations
+        for back_obj in self.backends:
+            arguments = self._merged_args(back_obj.runtime_variables)
+            total_steps = len(arguments) * self.bench.iterations
             i = 0
-            for arg in args:
-                for iteration in range(0, self.bench.iterations):
-                    self._execute(path, arg, iteration)
+            for arg in arguments:
+                self._execute(back_obj, arg, 0, init = True)
+                for iteration in range(1, self.bench.iterations):
+                    if self.cli_args.no_reinit:
+                        self._execute(back_obj, arg, iteration, init = False)
+                    else:
+                        self._execute(back_obj, arg, iteration, init = True)
                     i += 1
                     self.print("[{}/{}]".format(i, total_steps))
 
-    def execute(self, no_exec):
+                if self.cli_args.no_reinit and back_obj:
+                    backends = _retrieve_backends(back_obj)
+                    for backend in reversed(backends):
+                        backend.uninit()
+
+
+    def execute(self, args):
         """Execute the execution defined
 
         Argument:
-            no_exec: Do not run the benchmarks, rather only run attached
-            parser (if there is any defined)
+            args: Arguments namespace from the cli
         """
+        self.cli_args = args
 
-        if not no_exec:
+        if not args.no_exec:
             self.print("Starting execution")
             if self.backends is None:
                 self._execute_no_backend()
@@ -382,30 +413,19 @@ class Execution:
                 self._execute_with_backends()
             self.print("Done execution")
 
-        if self.parser:
-            self.print("Starting Parsing")
-            self.run_benchmarks = self.parser.parse()
-            self.print("Done parsing")
-
     def param_exists(self, name: str) -> bool:
         """Checks if a param exists within either the benchmark or the parser"""
         bench_has = self.bench.param_exists(name)
-        if self.parser:
-            parse_has = self.parser.param_exists(name)
-        else:
-            parse_has = False
-
-        if (self.backends):
-            backend_has = any([variable.param_exists(name) 
-                for variable in self.backends.values()])
+        if self.backends:
+            backend_has = any([back_obj.runtime_variables.param_exists(name)
+                for back_obj in self.backends])
         else:
             backend_has = False
 
-        return bench_has or parse_has or backend_has
+        return bench_has or backend_has
 
     def __str__(self):
         title = "Execution " + self.name
-
         return "{}\n{}\n{}".format(title, '=' * len(title), str(self.bench))
 
 
@@ -416,46 +436,66 @@ class DefBenchmark:
     the class name (all class names are converted to all lower case versions)
     """
 
-    def __init__(self, name: str, var: Variables, out_dir: str = None,
-                 iterations: int = 1):
+    def __init__(self, name: str, var: Variables,
+                    iterations: int = 1,
+                    parse = None):
         """Instantiation of a Defined Benchmark
 
         Arguments:
             name: name of the associated registeredbenchmark class (lower case)
             var: Variable object to define how you want the benchmark to change during
             and execution (See Variables documentation)
-            out_dir: Directory you wish raw data to output to, this is taken by parser objects
             iterations: Number of iterations you wish this benchmark to run given the variable
             object
+            parse: Parser object to convert raw data to usable objects and output
         """
         if name not in _sb_registered_benchmarks:
-            raise Exception(
+            error(
                 "Attempting to used undefined benchmark: {}".format(name))
 
         self.name = name
         self.variables = var
         self.iterations = iterations
-        if out_dir:
-            self.out_dir = out_dir
-        else:
-            self.out_dir = name + "-out"
+        self.parser = parse
 
-        try:
-            os.mkdir(self.out_dir)
-        except FileExistsError:
-            pass
+    def run(self, backend: str, out_file: str, bench_args: Dict, backend_args: Dict):
+        """Run the given benchmark
 
-    def clear_out(self):
-        """Clears output directory of all files"""
-        for path in os.listdir(self.out_dir):
-            os.remove(os.path.join(self.out_dir, path))
+        This expects backends to be setup if any are required.
 
-    def param_exists(self, param):
+        Arguments:
+        out_file: File to send output to.  We hand this to the run function
+        of the benchmark so users can have something to write to or pass to their process
+        backend:  String in path format of backend its being ran on
+        bench_args:  Named arguments for the benchmark
+        backend_args: Named arguments for the backends, this is used to help
+        the parser with context on what was passed.
+
+        Return:
+            Dictionary of parsed output from the file. None is returned if no parser
+            was given
+        """
+        benchmarker = _sb_registered_benchmarks[self.name]
+        benchmarker.run(backend, out_file, **bench_args)
+        if self.parser:
+            obj = self.parser.parse(out_file, bench_args, backend_args)
+            obj["_workload"] = self.name
+
+            return obj
+
+        return None
+
+
+    def param_exists(self,  param):
         """Checks if param exists
 
         This will check the variables defined by benchmark
         """
-        return self.variables.param_exists(param)
+        parse_has = False
+        if self.parser:
+            parse_has = self.parser.param_exists(param)
+
+        return self.variables.param_exists(param) or parse_has
 
     def __str__(self):
         return pformat(vars(self), width=30)
@@ -465,11 +505,11 @@ def plan_execution(
         name: str,
         run,
         backends: Dict = None,
-        parse=None,
-        ) -> None:
+        out: str = None) -> None:
     """Plan an execution
 
-    Definition of an execution of a workload and possible backends
+    Definition of an execution of a workload/benchmark and backends you wish to run the workload
+    on.
 
     Arguments:
         name: Name of the execution, to be used by graph objects to plot data
@@ -481,16 +521,17 @@ def plan_execution(
         parse: A parse object that defines how to take output from a workload,
         and retrieve data.
     """
+
+    if any(ch in name for ch in ['-', '/']):
+        error("Names cannot contain '-' or '/'")
+
     if name in _sb_executions:
-        raise Exception("Workload already define: {}".format(name))
+        error("Workload already define: {}".format(name))
 
     # We have to fix up the variables, we do this so the user doesnt
     # have to re-input variables twice. Parser also needs to know
     # variable names to create the object
-    _sb_executions[name] = Execution(name, run, parse, backends)
-    if _sb_executions[name].parser:
-        _sb_executions[name].parser.execution = _sb_executions[name]
-
+    _sb_executions[name] = Execution(name, run, backends, out)
 
 def plan_graph(name: str, graphobj):
     """Plan a graph object
@@ -502,9 +543,31 @@ def plan_graph(name: str, graphobj):
         graphobj: Graph object to tie to the name
     """
     if name in _sb_graphs:
-        raise Exception("Graph already defined: {}".format(name))
+        error("Graph already defined: {}".format(name))
 
     _sb_graphs[name] = graphobj
+
+
+def _is_static(func):
+    return isinstance(func, types.FunctionType)
+
+
+def _has_required_args(func):
+    return len(inspect.getfullargspec(func).args) >= 2
+
+_names_used = []
+
+def _check_names(cls, func, is_run = False):
+    if is_run:
+        args = inspect.getfullargspec(func).args[2:]
+    else:
+        args = inspect.getfullargspec(func).args
+    for name in args:
+        if name in _names_used:
+            error("Class '{}'-> function '{}' uses already defined argument name: {}".format(
+                cls.__name__, func.__name__, name))
+
+        _names_used.append(name)
 
 
 def registerbenchmark(cls):
@@ -512,6 +575,17 @@ def registerbenchmark(cls):
 
     cls: Class definition to wrap and register
     """
+    if not hasattr(cls, "run"):
+        error("Benchmark requires the run function: {}".format(cls.__name__))
+
+    if not _is_static(cls.run):
+        error("Benchmark requires the run function be static: {}".format(cls.__name__))
+
+    if not _has_required_args(cls.run):
+        error("Benchmark run needs 1 argument for output path: {}".format(cls.__name__))
+
+    _check_names(cls, cls.run, is_run = True)
+
     _sb_registered_benchmarks[cls.__name__.lower()] = cls
 
 
@@ -521,6 +595,21 @@ def registerbackend(cls):
     Argument:
     cls: Class definition to wrap and register
     """
+    if not hasattr(cls, "init"):
+        error("Backend requires the init function: {}".format(cls.__name__))
+
+    if not hasattr(cls, "uninit"):
+        error("Backend requires the uninit function: {}".format(cls.__name__))
+
+    if not _is_static(cls.init):
+        error("Backend requires the init function be static: {}".format(cls.__name__))
+
+    if not _is_static(cls.uninit):
+        error("Backend requires the init function be static: {}".format(cls.__name__))
+
+    _check_names(cls, cls.init)
+    _check_names(cls, cls.uninit)
+
     _sb_registered_backend[cls.__name__.lower()] = cls
 
 
@@ -552,13 +641,11 @@ def import_plan(filepath: str, mod_globals):
             imported_name = name
 
     if not imported_name:
-        print("plan.py does not import from simplebench")
-        return
+        error("plan.py does not import from simplebench")
 
     # Fix globals in our namespace
     for name in _EDIT_GLOBAL_TABLE:
         mod_globals[name] = getattr(getattr(plan_mod, imported_name), name)
-
 
 class Figure:
     """Create figure given a set of graphs, for more information see plan_figure documentation"""
@@ -574,8 +661,13 @@ class Figure:
         self.formatter = formatter
         self.out = out
 
+    def print(self, strn: str) -> None:
+        """Pretty print function"""
+        print("\033[1;35m[{}]:\033[0m {}".format(self.out, strn))
+
     def create(self):
         """Create the figure"""
+        self.print("Creating Figure")
         h = len(self.graphs)
         w = len(self.graphs[0])
         fig, axes = plt.subplots(ncols=w, nrows=h, squeeze=False)
@@ -585,15 +677,16 @@ class Figure:
                 try:
                     graph.graph(axes[y][x])
                 except Exception as err:
-                    print("Problem with graph {}: {}".format(self.name, err))
-                    sys.exit(1)
+                    error("Problem with graph {}: {}".format(self.name, err))
 
 
         format_fig(fig, axes, self.formatter)
 
         out = os.path.join(GRAPHS_DIR, self.out)
         plt.savefig(out, bbox_inches="tight", pad_inches=0)
-
+        if not out.endswith(".svg"):
+            out = ".".join(out.split(".")[:-1]) + ".svg"
+            plt.savefig(out, bbox_inches="tight", pad_inches=0)
 
 def plan_figure(name: str, graph_layout: List[List[str]], formatter, out: str):
     """Plan a figure given a set of graphs
@@ -623,12 +716,12 @@ def plan_figure(name: str, graph_layout: List[List[str]], formatter, out: str):
             sampelefig.svg
     """
     if name in _sb_figures:
-        raise Exception("Figure already defined: {}".format(name))
+        error("Figure already defined: {}".format(name))
 
     _sb_figures[name] = Figure(name, graph_layout, formatter, out)
 
 
-def execute_plan(plan: str, no_exec=False):
+def execute_plan(plan: str, args):
     """Entry point to start executing progbg
     Argument:
         plan: Path to plan .py file
@@ -637,29 +730,29 @@ def execute_plan(plan: str, no_exec=False):
     """
     import_plan(plan, globals())
 
-    if not no_exec:
+    if not args.no_exec:
         for execution in _sb_executions.values():
             execution.clean()
 
     for execution in _sb_executions.values():
-        execution.execute(no_exec)
+        execution.execute(args)
 
     try:
         os.mkdir(GRAPHS_DIR)
     except FileExistsError:
         pass
 
-    for name, graph in _sb_graphs.items():
+    for graph in _sb_graphs.values():
         if graph.out:
             fig, axes = plt.subplots()
-            #try:
             graph.graph(axes)
-            # except Exception as e:
-                # print("Problem with graph {}: {}".format(name, e))
-                # sys.exit(1)
             format_fig(fig, axes, graph.formatter)
             out = os.path.join(GRAPHS_DIR, graph.out)
+
             plt.savefig(out, bbox_inches="tight", pad_inches=0)
+            if not out.endswith(".svg"):
+                out = ".".join(out.split(".")[:-1]) + ".svg"
+                plt.savefig(out, bbox_inches="tight", pad_inches=0)
 
     for fig in _sb_figures.values():
         fig.create()

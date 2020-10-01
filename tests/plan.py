@@ -36,7 +36,7 @@ class Tomcat:
 @sb.registerbenchmark
 class WRK:
     @staticmethod
-    def run(outfile, test = 5, x = 10):
+    def run(backend, outfile, test = 5, x = 10):
         # DO STUFF
         avg = str(randint(1, 1000))
         max = str(randint(500, 1000))
@@ -50,63 +50,116 @@ class WRK:
 def func(line):
     return [x.strip() for x in line.split()[1:]]
 
-sb.plan_execution("wrk-2",
-        sb.DefBenchmark("wrk",
-            sb.Variables(
-                consts = {
-                    "test" : 2
-                },
-                var = [("x" ,range(0, 3, 1))]
-            ),
-            iterations = 5,
-            out_dir = "out",
+
+# Test file output without backend
+sb.plan_execution("wrk1",
+    sb.DefBenchmark("wrk",
+        sb.Variables(
+            consts = {},
+            var = [("x" ,range(0, 3, 1)), ("test", range(0, 5, 2))]
         ),
-        {
-            'ffs/tomcat': sb.Variables(
-                consts = {
-                    "myvar": 5
-                },
-                var = [("pass_me_in", range(0, 10, 2))]
-            ),
-            'bck': sb.Variables(
-                consts = {},
-                var = [("another_var", [1, 5 ,7])]
-            )
-        },
-        parse = sb.MatchParser("out",
+        iterations = 5,
+        parse = sb.MatchParser(
             {
                 "^Latency": (
                     ["avg", "max", "min"], func
                 )
             },
-            save = "out"
         )
+    ),
+    out = "out",
 )
 
-sb.plan_execution("wrk-1",
-        sb.DefBenchmark("wrk",
-            sb.Variables(
-                consts = {},
-                var = [("x" ,range(0, 3, 1)), ("test", range(0, 5, 2))]
-            ),
-            iterations = 5,
-            out_dir = "out",
+# Test sqlite output with backend
+sb.plan_execution("wrk2",
+    sb.DefBenchmark("wrk",
+        sb.Variables(
+            consts = {
+                "test" : 2
+            },
+            var = [("x" ,range(0, 3, 1))]
         ),
-        parse = sb.MatchParser("out",
+        iterations = 5,
+        parse = sb.MatchParser(
             {
                 "^Latency": (
                     ["avg", "max", "min"], func
                 )
             },
-            save = "out"
         )
+    ),
+    {
+        'ffs/tomcat': sb.Variables(
+            consts = {
+                "myvar": 5
+            },
+            var = [("pass_me_in", range(0, 10, 2))]
+        ),
+        'bck': sb.Variables(
+            consts = {},
+            var = [("another_var", [1, 5 ,7])]
+        )
+    },
+    out = "out.db",
+)
+
+# Test benchmark with backend and directory output
+sb.plan_execution("wrk3",
+    sb.DefBenchmark("wrk",
+        sb.Variables(
+            consts = {
+                "test" : 2
+            },
+            var = [("x" ,range(0, 3, 1))]
+        ),
+        iterations = 5,
+        parse = sb.MatchParser(
+            {
+                "^Latency": (
+                    ["avg", "max", "min"], func
+                )
+            },
+        )
+    ),
+    {
+        'ffs/tomcat': sb.Variables(
+            consts = {
+                "myvar": 5
+            },
+            var = [("pass_me_in", range(0, 10, 2))]
+        ),
+        'bck': sb.Variables(
+            consts = {},
+            var = [("another_var", [1, 5 ,7])]
+        )
+    },
+    out = "out",
+)
+
+# Test sql output without backend
+sb.plan_execution("wrk4",
+    sb.DefBenchmark("wrk",
+        sb.Variables(
+            consts = {},
+            var = [("x" ,range(0, 3, 1)), ("test", range(0, 5, 2))]
+        ),
+        iterations = 5,
+        parse = sb.MatchParser(
+            {
+                "^Latency": (
+                    ["avg", "max", "min"], func
+                )
+            },
+        )
+    ),
+    out = "out.db",
 )
 
 sb.plan_graph("graph-1",
     sb.LineGraph(
         "x",
         "avg",
-        ["wrk-2:ffs/tomcat", "wrk-2:bck","wrk-1"],
+        ["wrk2:ffs/tomcat", "wrk2:bck","wrk1"],
         {
             "pass_me_in": 4,
             "another_var": 5,
@@ -120,7 +173,7 @@ sb.plan_graph("graph-2",
     sb.LineGraph(
         'x',
         "min",
-        ["wrk-2:ffs/tomcat", "wrk-1"],
+        ["wrk2:ffs/tomcat", "wrk1"],
         {
             'pass_me_in': 4,
             "test" : 2
@@ -131,7 +184,7 @@ sb.plan_graph("graph-2",
 sb.plan_graph("graph-3",
     sb.BarGraph(
             ["min", "avg", "max"],
-            ["wrk-2:ffs/tomcat", "wrk-2:bck"],
+            ["wrk2:ffs/tomcat", "wrk2:bck", "wrk3:bck"],
             {
                 'pass_me_in': 4,
                 'test': 2,
@@ -146,7 +199,7 @@ sb.plan_graph("graph-3",
 sb.plan_graph("graph-4",
     sb.BarGraph(
             ["min", "avg", "max"],
-            ["wrk-2:ffs/tomcat", "wrk-2:bck"],
+            ["wrk2:ffs/tomcat", "wrk2:bck"],
             {
                 'pass_me_in': 4,
                 'test': 2,
@@ -160,11 +213,11 @@ sb.plan_graph("graph-4",
 
 
 sb.plan_figure("fig-1",
-        [["graph-1"],
-         ["graph-2"]],
+        [["graph-1", "graph-4"],
+         ["graph-2", "graph-3"]],
         {
             "height": 6,
-            "width": 3,
+            "width": 6,
         },
         out  = "samplefig.svg"
 )

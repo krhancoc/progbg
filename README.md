@@ -24,17 +24,20 @@ $ pip install progbg
 
 Quick Start
 -----------
-Firsty we should define the following terms:
+Firsty lets define the following terms:
 
-1. **Executions** are composed of:
-  * **Backends**: The system you are trying to test
-  * **Benchmark**: An application that runs on a backend and produces data output
-  * **Parsers**: Parsers that consumes data to produce objects which graphs can consume
-2. **Figures** take formatting information (styles etc.) and are composed of:
-  * **Graphs**: Consume parser information and formatting information, to help create figures
+1. **Execution** are composed of backends and a benchmark. They form the **running** component of progbg
+2. **Backend**: The system underlying system you may be trying to test.  This is setup prior to running a benchmark.  Benchmarks
+can be composed using path style syntax (See below for an example).
+3. **Benchmark**: An application that runs on a backend and produces data output, using a given parser.
+4. **Parser**: Parsers that consume data to produce objects which graphs use.
+5. **Graph**: Consume parser information and formatting information, to help output individual graphs.  Can be used by themselves
+or be used by figures.
+6. **Figure** take formatting information (styles etc.) and are composed of graphs.
+
 
 Simply put you define benchmarks and backends with the provided decorators 
-`registerbackend` and `registerbenchmark` these wrap CLASSES. 
+`registerbackend` and `registerbenchmark` these wrap classes. 
 
 Sample Backend would look like:
 ```python
@@ -70,7 +73,7 @@ A sample benchmark would look like the following:
 @sb.registerbenchmark
 class WRK:
     @staticmethod
-    def run(outfile, test = 5, x = 10):
+    def run(backend, outfile, test = 5, x = 10):
         # DO STUFF
         avg = str(randint(1, 1000))
         max = str(randint(500, 1000))
@@ -83,12 +86,21 @@ class WRK:
 ```
 This is just a dummy benchmark that randomly produces 3 numbers.
 
-Now that the backends and benchmark is defined, we can use these to define executions.
+Note: 
+1. Benchmarks require at least 1 argument which is that path to an output file, which the benchmark
+should use to pipe output related to the data from the benchmark. This can be seen as the path for the -o argument
+many benchmarks use. If a benchmark does not use that.  I suggest using subprocess and piping the output to
+the file.
+2. All variable names used for arguments within methods for backends or benchmarks require a name, and to be unique within the scope
+of the entire file. For example above, the `WRK` benchmark and `FFS` backend cannot both have a variable named `test`.
+
+Now that the backends and benchmark is defined, we can use these to define our execution.
 
 A simple execution:
 
 ```python
 sb.plan_execution("my_execution",
+        # Notice the "wrk" - this is to identify which registered benchmark to use (specified above)
         sb.DefBenchmark("wrk",
             sb.Variables(
                 consts = {
@@ -97,7 +109,13 @@ sb.plan_execution("my_execution",
                 var = [("x" ,range(0, 3, 1))]
             ),
             iterations = 5,
-            out_dir = "out",
+            parse = sb.MatchParser("out",
+            {
+                "^Latency": (
+                    ["avg", "max", "min"], func
+                )
+            },
+        )
         ),
         {
             # Note: The arguments passed in here have the same name as the arguments used
@@ -113,38 +131,39 @@ sb.plan_execution("my_execution",
                 var = [("another_var", [1, 5 ,7])]
             )
         },
-        parse = sb.MatchParser("out",
-            {
-                "^Latency": (
-                    ["avg", "max", "min"], func
-                )
-            },
-            save = "out"
-        )
+        out = "out.db"
 )
 ```
-
 # Planning Executions
-`plan_execution` takes in four arguments:
+`plan_execution` takes in 3 arguments:
 
 **A unique name**
 
-This is a name that will be used by the grapher to help create figures. So it must be unique.
+This is a name that will be used by graph objects te help create graphs. It is used to identify the execution and
+all data produced by it.
 
 **A Benchmark object**
 
 Currently there is only one - `DefBenchmark`. This benchmark
-required 3 parameters, its variable list, number of iterations that you'd this benchmark
-to run, as well as a directory to push raw data to.
+required 4 parameters, the lowercase name of the registered class, its Variable objects, number of iterations that you'd this benchmark
+to run, and the parser that will convert data from the benchmark to usable objects.
+
+**Output string**
+Currently there are two supported outputs for benchmarks.  If the user supplies a name
+with a ".db" extension, then data will be placed into a sqlite3 database. Multiple
+executions can share this database.
+
+Any other name will be seen as a directory and each benchmark run will be stored as a seperate
+file.
 
 ### Variables Objects
-These objects define want changes and stays constant.  They are used within both defining
-variables for the backend as well as the benchmark.  This allows progbg to essentially
-iterate through the cross product of all changing variables defined within the 
-backend and the benchmark. For our specific example we are changing the variable
-"x" and keeping "test" constant.  These variables are the arguments to the benchmark registered above!
-
-The same goes for the variables outline within the backend definitions (explained ahead).
+These objects define what changes and stays constant during the execution run.
+They are used within both defining variables for the backend as well as the
+benchmark.  This allows progbg to iterate through the cross product of all
+changing variables defined within the backend and the benchmark. For our
+benchmark we are changing the variable "x" and keeping "test" constant. The
+given backends are also changing their own variables. These variable names are
+the arguments to the benchmark and backend registered above.
 
 **A Dictionary that describes the backends**
 
@@ -153,25 +172,20 @@ backends we can refer back to them using their lower case name, and we are also 
 to compose these backends. 
 
 "ffs/bck" uses a composition of both the FFS defined backend and BCK backend (found above).
-This inits the backend in the order of the path.  With the benchmark being ran after all defined
-backends have been inited. This allows you to, like in the psuedo example above, create a 
+This inits the backend in the order of the path.  With the benchmark being run after all defined
+backends init function have been called. This for example allows you to create a 
 fast file system backend, then place some server (tomcat, or whatever you need) on top
-then run the benchmark.
+then run the composed benchmark.
 
-Note that backends are created and destroyed after EVERY benchmark. An option will be 
-
-**A Parser Object**
-
-This takes the output from your executions and parses it to a usable format.  Currently
-there is only one supported parser.
+Note that backends are created and destroyed after EVERY benchmark, this can be disabled with the `--no-reinit` flag.
 
 ### Match Parser
-The Match parser take a dictionary of regex strings to a tuple of a list of named outputs
-and a function that create those outputs. When the parser receives raw data it goes through
-line by line, and passes the line to the function if the regex search is true on that line.
+The Match parser takes a dictionary of regex strings to a tuple of named outputs
+and a function that creates those outputs. When the parser receives raw data it goes through
+line by line, and passes the line to the provided function if the regex search is true on that line
 
 For our above example this is matching on the regex "^Latency" and outputing our variables
-avg, max, and min.  These can be used by the graph tool to be graphed.
+avg, max, and min.  These can be used by the graph tool to be graphed. The names must also be unique globally.
 
 # Planning Graphs
 
@@ -199,14 +213,19 @@ This name is used so that we can plan figures if we so desire with these graphs
 
 **Graph Object**
 
-Currently there are two objects `LineGraph` and `BarGraph`.  Refer to docs for more 
+Currently there are two graph styles (`LineGraph` and `BarGraph`).  Refer to docs for more 
 detailed usage.  But in general, these graphs take the variables that you wish to graph
-by there name (these are names that we provided either to the variables for the backend, the benchmarks,
-or the parser).
+by their name (these are names that were provided either to the variables for the backend, the benchmarks,
+or the parser), and uses this to grab the appropriate data from the specified saved output (either the directory.
+or sql database).
 
 In our above example we are plotting how "avg" changes over "x", and we want the variables
 `pass_me_in`, `aother_var`, `test` to be fixed at specific points.  We then wish this graph to
-be outputed to `avg.svg`.
+be outputed to `avg.svg`. The graph will always output an svg by default (for use within the
+flask server that can be used to present graphs).  
+
+`progbg` also supports `.pgf` extensions
+
 
 More
 ---------------
@@ -227,7 +246,6 @@ Kenneth R Hancock `krhancoc <https://github.com/krhancoc>`
 TODO
 ----
 1. CSV Parser
-2. Command line Benchmark Class
+2. Command line Benchmark Class (We may also not even need this, we may only need one benchmark class)
 3. Better Error Handling and Hints
 4. Tests
-5. Disable re-initing backends

@@ -27,6 +27,11 @@ def cli_entry():
         action="store_true",
         help="Do not re-run any executions \
             (Note: This assume all output defined in graphs are already progbg format)")
+    parser.add_argument(
+        "--no-reinit",
+        action="store_true",
+        help="Do not re-initialize backends during each iteration when running benchmarks")
+
 
 
     args = parser.parse_args()
@@ -34,7 +39,7 @@ def cli_entry():
         print("Issue finding the plan.py file/")
         return
 
-    globs = execute_plan(args.plan, no_exec=args.no_exec)
+    globs = execute_plan(args.plan, args)
 
 
     if args.p:
