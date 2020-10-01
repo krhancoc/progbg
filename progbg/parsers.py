@@ -102,6 +102,10 @@ class FileParser:
         for val in zip(self.names, vals):
             obj[val[0]] = val[1]
 
+        if backend_args:
+            for key, val in backend_args.items():
+                obj[key] = val
+
         obj['_execution_name'] = path.split('/')[-1].split('_')[0]
         execution = _sb_executions[obj['_execution_name']]
         obj.update(execution.reverse_file_out(path))
