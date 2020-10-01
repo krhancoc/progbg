@@ -31,6 +31,10 @@ def cli_entry():
         "--no-reinit",
         action="store_true",
         help="Do not re-initialize backends during each iteration when running benchmarks")
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Turns on printing within the run, init, and uninit methods provided by user")
 
 
 

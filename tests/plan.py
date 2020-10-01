@@ -50,6 +50,13 @@ class WRK:
 def func(line):
     return [x.strip() for x in line.split()[1:]]
 
+def file_func(path):
+    with open(path, 'r') as file:
+        for line in file.readlines():
+            if "Latency" in line:
+                return [x.strip() for x in line.split()[1:]]
+
+    return None
 
 # Test file output without backend
 sb.plan_execution("wrk1",
@@ -80,13 +87,7 @@ sb.plan_execution("wrk2",
             var = [("x" ,range(0, 3, 1))]
         ),
         iterations = 5,
-        parse = sb.MatchParser(
-            {
-                "^Latency": (
-                    ["avg", "max", "min"], func
-                )
-            },
-        )
+        parse = sb.FileParser(["avg", "max", "min"], file_func),
     ),
     {
         'ffs/tomcat': sb.Variables(

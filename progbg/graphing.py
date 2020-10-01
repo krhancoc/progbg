@@ -128,6 +128,8 @@ def _retrieve_data_db(execution, restriction):
     exec_str = "SELECT {} FROM {} WHERE ({})".format(",".join(quotes), tablename, full)
     c.execute(exec_str)
     data = c.fetchall()
+    if not len(data):
+        raise Exception("Restriction too fine - no data found")
 
     if len(data[0]) != len(execution.tables[tablename]):
         raise Exception("Data types not matching with sqldb")
@@ -201,8 +203,9 @@ class BarGraph:
         self.aggregation = None
         self.group_by = group_by
 
-    def graph(self, ax):
+    def graph(self, ax, silent = False):
         """Graph the bar graph one the given axes object"""
+        self.print("Graphing", silent)
         width = 0.30
         self.aggregation = dict()
         for work, benchmark in retrieve_relavent_data(self.workloads, self.restrict).items():
@@ -248,6 +251,14 @@ class BarGraph:
 
         ax.legend()
 
+    def print(self, strn: str, silent) -> None:
+        """Pretty printer for BarGraph"""
+        if silent:
+            return
+
+        print("\033[1;34m[{}]:\033[0m {}".format(self.out, strn))
+
+
 class LineGraph:
     """progbg Line Graph
 
@@ -279,16 +290,19 @@ class LineGraph:
         self.restrict = restrict
         self.aggregation = None
 
-    def print(self, strn: str) -> None:
+    def print(self, strn: str, silent) -> None:
         """Pretty printer for LineGraph"""
+        if silent:
+            return
+
         print("\033[1;34m[{}]:\033[0m {}".format(self.out, strn))
 
-    def graph(self, ax):
+    def graph(self, ax, silent = False):
         """ Create the line graph
         Arguments:
             ax: Axes object to attach data too
         """
-        self.print("Graphing")
+        self.print("Graphing", silent)
         self.aggregation = dict()
         for work, benchmark in retrieve_relavent_data(self.workloads, self.restrict).items():
             check_one_varying(benchmark, extras=[self.x_name])

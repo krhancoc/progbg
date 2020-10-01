@@ -20,8 +20,8 @@ def check_one_varying(benchmarks: List[Dict], extras: List[str]=[]):
     """
     execution = _sb_executions[benchmarks[0]['_execution_name']]
     varying = []
-    for rule in execution.bench.parser.match_rules.values():
-        varying.extend(rule[0])
+    for rule in execution.bench.parser.fields():
+        varying.append(rule)
 
     varying.extend(extras)
     varying.append('_iter')
@@ -36,7 +36,7 @@ def check_one_varying(benchmarks: List[Dict], extras: List[str]=[]):
                 consts[key] = val
             else:
                 if str(consts[key]) != str(val):
-                    raise Exception("Only one variable should be changing in a graph:{}"
+                    raise Exception("Only one variable should be changing in the graph:{}"
                             .format(key))
 
 

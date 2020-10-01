@@ -2,10 +2,19 @@
 
 import itertools
 import sys
+import os
 from pprint import pformat
 from typing import List, Dict, Tuple
 
 from .globals import _sb_rnames
+
+
+def silence_print():
+    sys.stdout = open(os.devnull, 'w')
+
+def restore_print():
+    sys.stdout.close()
+    sys.stdout = sys.__stdout__
 
 def error(strn: str):
     print("\033[0;31m[Error]:\033[0m {}".format(strn))
@@ -34,6 +43,7 @@ class Variables:
 
     This will define the permutations that can occur for those that utilize the
     class (see Variables.produce_args documentation)
+
     Attributes:
         const: A dictionary of argument names to values that will be passed
         var: A tuple of an argument name and some iterable object

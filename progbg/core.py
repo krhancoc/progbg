@@ -3,7 +3,7 @@
 """Core API calls and classes for ProgBG
 
 This module contains all the related API calls for creating and managing
-the plan.py files, graphing is handled within graphing.py.
+t.format(str(bench_args[val]))ihe plan.py files, graphing is handled within graphing.py.
 
 sA special case we have to handling is the handling of global variables
 within ProgBG. Since we dynamically pull in a users file, their module
@@ -14,9 +14,7 @@ This can be seen in the function import_plan.
 """
 
 import os
-import re
 import importlib
-import sys
 import inspect
 import sqlite3
 import types
@@ -28,6 +26,8 @@ import matplotlib.pyplot as plt
 
 from .format import format_fig, check_formatter
 from .util import Backend, Variables, dump_obj, error
+from .util import silence_print, restore_print
+
 from .globals import _sb_registered_benchmarks, _sb_registered_backend
 from .globals import _sb_executions, _sb_graphs, _sb_rnames
 from .globals import _sb_figures, GRAPHS_DIR
@@ -66,74 +66,6 @@ def check_file_backend(file_name):
         return None
 
     return chunks[2]
-
-class MatchParser:
-    """MatchParser class takes regex matches and on success run a given function"""
-    def __init__(self, match_rules: Dict):
-        """Match parser init
-        Arguments:
-            match_rules: Dictionary of regex to a tuple of a list output names
-            and a function that will return values to bind to those names
-        Example:
-            parse = sb.MatchParser(
-                {
-                    "^Latency": (
-                        ["avg", "max", "min"], func
-                    )
-                },
-            )
-
-            In the above example we take data from the out directory, take the line
-            that matches on ^Latency and outputs the avg, max and min. func
-            is a function that will output values which bind to these names.
-            This means func must output a list of 3 values for this above example.
-        """
-        self.match_rules = match_rules
-        self.execution = None
-
-    def _match(self, line: str, obj: Dict):
-        for cand, tup in self.match_rules.items():
-            if re.search(cand, line):
-                output = tup[1](line)
-                if len(output) != len(tup[0]):
-                    raise Exception("Function provided outputed {} values, expected {}"
-                            .format(len(output), len(tup[0])))
-                for e in zip(tup[0], output):
-                    obj[e[0]] = e[1]
-
-
-    def param_exists(self, name: str) -> bool:
-        """Check if a param exists as an output of the parser"""
-        return any([name in varfunc[0]
-                    for varfunc in self.match_rules.values()])
-
-    def fields(self) -> List[str]:
-        """ Retrieve all named fields within the parser"""
-        return [item for sublist in self.match_rules.values() for item in sublist[0]]
-
-    def parse(self, file, bench_args, backend_args):
-        """Parse the execution"""
-        obj = {}
-        with open(file, 'r') as f:
-            for line in f:
-                self._match(line, obj)
-            # Make sure to put constants in the data as well
-            for key, val in bench_args.items():
-                obj[key] = val
-
-            if backend_args:
-                for key, val in backend_args.items():
-                    obj[key] = val
-
-            execution_name = file.split('/')[-1].split('_')[0]
-            execution = _sb_executions[execution_name]
-            obj['_execution_name'] = execution_name
-            # We hold field names within our filename as well, things like iteration number
-            # and var variable value
-            obj.update(execution.reverse_file_out(file))
-
-        return obj
-
 
 
 class Execution:
@@ -200,7 +132,7 @@ class Execution:
         conn.close()
 
     # Constantly creating the connection is not so nice.
-    def _add_sql_row(self, obj):
+    def _add_sql_row(self, obj, bench_args, full_backend_args):
         conn = sqlite3.connect(self.out)
         c = conn.cursor()
         inserted = False
@@ -229,7 +161,12 @@ class Execution:
                     # over later
                     vals.append('"{}"'.format(str(obj[val])))
                 else:
-                    vals.append("''")
+                    if full_backend_args and val in full_backend_args:
+                        vals.append('"{}"'.format(str(full_backend_args[val])))
+                    elif val in bench_args:
+                        vals.append('"{}"'.format(str(bench_args[val])))
+                    else:
+                        vals.append('""')
 
             quotes = [ '"{}"'.format(val.strip()) for val in fields ]
             exec_str = "INSERT INTO {} ({})\nVALUES ({});".format(name_full,
@@ -334,15 +271,22 @@ class Execution:
         return values
 
     def _execute(self, back_obj, args, iteration, init = True):
+        if not self.cli_args.debug:
+            silence_print()
+
         if back_obj:
             full_backend_args = args['backend']
             backends = _retrieve_backends(back_obj)
             for backend in backends:
                 required = inspect.getfullargspec(backend.init)
+                # Set defaults for full_backend args
+                for index, k in enumerate(required.args):
+                    if k not in full_backend_args:
+                        full_backend_args[k] = required.defaults[index]
+                # Seperate out only the args needed for this backend
                 backend_args = { k:v for k,v in full_backend_args.items() if k in required }
                 if init:
                     backend.init(**backend_args)
-
         else:
             full_backend_args = None
 
@@ -357,7 +301,7 @@ class Execution:
             obj = self.bench.run(backend_str, out_file, bench_arg, full_backend_args)
             if obj:
                 if self.is_sql_backed():
-                    self._add_sql_row(obj)
+                    self._add_sql_row(obj, bench_arg, full_backend_args)
                     os.remove(out_file)
                 else:
                     dump_obj(out_file, obj)
@@ -366,21 +310,20 @@ class Execution:
             for backend in reversed(backends):
                 backend.uninit()
 
+        if not self.cli_args.debug:
+            restore_print()
+
     def _execute_no_backend(self):
         benchmark_args = self.bench.variables.produce_args()
-        total_steps = len(benchmark_args) * self.bench.iterations
-        i = 0
+        self.print("No backend provided - running iterations")
         for args in benchmark_args:
             for iteration in range(0, self.bench.iterations):
                 self._execute(None, dict( benchmark = [args] ), iteration)
-                i += 1
-                self.print("[{}/{}]".format(i, total_steps))
 
     def _execute_with_backends(self):
         for back_obj in self.backends:
+            self.print("Backend: {}".format(back_obj.path_user))
             arguments = self._merged_args(back_obj.runtime_variables)
-            total_steps = len(arguments) * self.bench.iterations
-            i = 0
             for arg in arguments:
                 self._execute(back_obj, arg, 0, init = True)
                 for iteration in range(1, self.bench.iterations):
@@ -388,9 +331,6 @@ class Execution:
                         self._execute(back_obj, arg, iteration, init = False)
                     else:
                         self._execute(back_obj, arg, iteration, init = True)
-                    i += 1
-                    self.print("[{}/{}]".format(i, total_steps))
-
                 if self.cli_args.no_reinit and back_obj:
                     backends = _retrieve_backends(back_obj)
                     for backend in reversed(backends):
@@ -675,7 +615,7 @@ class Figure:
             for x in range(0, w):
                 graph = _sb_graphs[self.graphs[y][x]]
                 try:
-                    graph.graph(axes[y][x])
+                    graph.graph(axes[y][x], silent = True)
                 except Exception as err:
                     error("Problem with graph {}: {}".format(self.name, err))
 
