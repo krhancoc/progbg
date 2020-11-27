@@ -50,14 +50,15 @@ class Variables:
     """
     def __init__(self, consts: Dict = None,
                  var: List[Tuple[str, List]] = None) -> None:
-        if any([i in consts for i in _sb_rnames]) or (var[0] in _sb_rnames):
-            raise Exception(
-                "Cannot use a reserved name for a variable {}".format(
-                    pformat(_sb_rnames)))
-        for vals in var:
-            if vals[0] in consts:
-                raise Exception("Name defined as constant and varying: {}".format(
-                    vals[0]))
+        if len(var):
+            if any([i in consts for i in _sb_rnames]) or (var[0] in _sb_rnames):
+                raise Exception(
+                    "Cannot use a reserved name for a variable {}".format(
+                        pformat(_sb_rnames)))
+            for vals in var:
+                if vals[0] in consts:
+                    raise Exception("Name defined as constant and varying: {}".format(
+                        vals[0]))
 
         self.consts = consts
         self.var = var
@@ -81,6 +82,9 @@ class Variables:
                 ...
                 { other = 1, x = 2, test = 4},
         """
+        if not len(self.var):
+            return [dict(self.consts)]
+
         key_names, ranges = zip(*self.var)
         args = []
         for perm in itertools.product(*ranges):

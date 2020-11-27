@@ -20,7 +20,6 @@ import sqlite3
 import types
 from typing import List, Dict
 from pprint import pformat
-from functools import cached_property
 
 import matplotlib.pyplot as plt
 
@@ -87,7 +86,6 @@ class Execution:
         """Pretty printer for execution"""
         print("\033[1;31m[{} - {}]:\033[0m {}".format(self.name, self.bench.name, string))
 
-    @cached_property
     def tables(self):
         """
         Generates the tables needed for the sqlite backend
@@ -284,7 +282,7 @@ class Execution:
                     if k not in full_backend_args:
                         full_backend_args[k] = required.defaults[index]
                 # Seperate out only the args needed for this backend
-                backend_args = { k:v for k,v in full_backend_args.items() if k in required }
+                backend_args = { k:v for k,v in full_backend_args.items() if k in required.args }
                 if init:
                     backend.init(**backend_args)
         else:
@@ -322,8 +320,8 @@ class Execution:
 
     def _execute_with_backends(self):
         for back_obj in self.backends:
-            self.print("Backend: {}".format(back_obj.path_user))
             arguments = self._merged_args(back_obj.runtime_variables)
+            self.print("Backend: {} {}".format(back_obj.path_user, arguments))
             for arg in arguments:
                 self._execute(back_obj, arg, 0, init = True)
                 for iteration in range(1, self.bench.iterations):
