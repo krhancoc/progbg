@@ -17,6 +17,7 @@ import os
 import importlib
 import inspect
 import sqlite3
+import shutil
 import types
 from typing import List, Dict
 from pprint import pformat
@@ -187,11 +188,11 @@ class Execution:
         else:
             try:
                 os.mkdir(self.out)
-            except:
-                pass
-
-            for path in os.listdir(self.out):
-                os.remove(os.path.join(self.out, path))
+            except Exception as e:
+                if len(os.listdir(self.out)) > 0:
+                    self.print(e)
+                    self.print("Problem creating out directory {}, test data already there".format(self.out))
+                    exit(0)
 
     def _merged_args(self, back_vars):
         benchmark = self.bench.variables.produce_args()
@@ -413,10 +414,15 @@ class DefBenchmark:
             Dictionary of parsed output from the file. None is returned if no parser
             was given
         """
+        if not self.iterations:
+            return None
+
         benchmarker = _sb_registered_benchmarks[self.name]
         benchmarker.run(backend, out_file, **bench_args)
         if self.parser:
             obj = self.parser.parse(out_file, bench_args, backend_args)
+            if obj == None:
+                return None
             obj["_workload"] = self.name
 
             return obj
@@ -501,9 +507,9 @@ def _check_names(cls, func, is_run = False):
     else:
         args = inspect.getfullargspec(func).args
     for name in args:
-        if name in _names_used:
-            error("Class '{}'-> function '{}' uses already defined argument name: {}".format(
-                cls.__name__, func.__name__, name))
+        # if name in _names_used:
+            # error("Class '{}'-> function '{}' uses already defined argument name: {}".format(
+                # cls.__name__, func.__name__, name))
 
         _names_used.append(name)
 
@@ -681,16 +687,16 @@ def execute_plan(plan: str, args):
         pass
 
     for graph in _sb_graphs.values():
-        if graph.out:
+        if len(graph.out):
             fig, axes = plt.subplots()
             graph.graph(axes)
             format_fig(fig, axes, graph.formatter)
-            out = os.path.join(GRAPHS_DIR, graph.out)
-
-            plt.savefig(out, bbox_inches="tight", pad_inches=0)
-            if not out.endswith(".svg"):
-                out = ".".join(out.split(".")[:-1]) + ".svg"
-                plt.savefig(out, bbox_inches="tight", pad_inches=0)
+            for curout in graph.out:
+                out = os.path.join(GRAPHS_DIR, curout)
+                try:
+                    plt.savefig(out)
+                except:
+                    print("Problem with output {}".format(out))
 
     for fig in _sb_figures.values():
         fig.create()

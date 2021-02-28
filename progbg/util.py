@@ -34,7 +34,11 @@ def retrieve_obj(file: str) -> Dict:
     with open(file, 'r') as ofile:
         for line in ofile.readlines():
             vals = line.strip().split('=')
-            obj[vals[0]] = vals[1]
+            try:
+                obj[vals[0]] = vals[1]
+            except:
+                print("Issue with file: {}".format(file))
+                exit(0)
     return obj
 
 class Variables:

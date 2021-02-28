@@ -94,6 +94,9 @@ class FileParser:
     def parse(self, path, bench_args, backend_args) -> List:
         """Parse the whole file at path"""
         vals = self.func(path)
+        if vals == None:
+            return None
+
         if len(vals) != len(self.names):
             raise Exception("Issue with provided function, returned {} vals, expected {}".format(
                 str(len(vals)), str(len(self.names))))
