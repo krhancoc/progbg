@@ -10,7 +10,7 @@ I then would like to generate figures to firstly to better see trends in my data
 **Solution:**
 `progbg` is a simple glue framework that exposes a planning API to allow you to plan and program
 your benchmarks, parsing, and finally the graphs and figures that are produced by them. 
-The API is developed to allow not just basic option paramaters to modify graphs and benchmarks,  but also defining
+The API is developed to allow not just basic option parameters to modify graphs and benchmarks,  but also defining
 and changing behaviour through defined functions and classes that have access to [`matplotlib`](https://matplotlib.org)
 which `progbg` uses for its graphing library.
 
@@ -24,9 +24,9 @@ $ pip install progbg
 
 Quick Start
 -----------
-Firsty lets define the following terms:
+Let's define the following terms:
 
-1. **Execution** are composed of backends and a benchmark. They form the **running** component of progbg
+1. **Executions** are composed of backends and a benchmark. They form the **running** component of progbg
 2. **Backend**: The system underlying system you may be trying to test.  This is setup prior to running a benchmark.  Benchmarks
 can be composed using path style syntax (See below for an example).
 3. **Benchmark**: An application that runs on a backend and produces data output, using a given parser.
@@ -36,10 +36,10 @@ or be used by figures.
 6. **Figure** take formatting information (styles etc.) and are composed of graphs.
 
 
-Simply put you define benchmarks and backends with the provided decorators 
-`registerbackend` and `registerbenchmark` these wrap classes. 
+Backends and benchmarks are defined with the provided decorators 
+`registerbackend` and `registerbenchmark`. These decorators wrap classes. 
 
-Sample Backend would look like:
+A sample backend would look like:
 ```python
 @sb.registerbackend
 class FFS:
@@ -65,7 +65,7 @@ class BCK:
         pass
 
 ```
-Backends require both the init and uninit methods, these are what are ran before 
+Backends require both the init and uninit methods, which are run before 
 benchmarks are executed.
 
 A sample benchmark would look like the following:
@@ -84,17 +84,17 @@ class WRK:
             out.write(vals)
             out.write(strn)
 ```
-This is just a dummy benchmark that randomly produces 3 numbers.
+This is a dummy benchmark that randomly produces 3 numbers.
 
 Note: 
-1. Benchmarks require at least 1 argument which is that path to an output file, which the benchmark
-should use to pipe output related to the data from the benchmark. This can be seen as the path for the -o argument
-many benchmarks use. If a benchmark does not use that.  I suggest using subprocess and piping the output to
-the file.
+1. Benchmarks require at least one argument which is the path to an output file, which the benchmark
+should use to pipe output related to the data from the benchmark.  <!-- "If a benchmark does not use that." -This sentence fragment was sitting here. I'm assuming it 's supposed to tell you what happens if an output is missing'--> This can be seen as the path for the -o argument
+many benchmarks use. I suggest using subprocess and piping the output to the file.
 2. All variable names used for arguments within methods for backends or benchmarks require a name, and to be unique within the scope
 of the entire file. For example above, the `WRK` benchmark and `FFS` backend cannot both have a variable named `test`.
 
-Now that the backends and benchmark is defined, we can use these to define our execution.
+
+An execution is composed of backends and benchmarks.
 
 A simple execution:
 
