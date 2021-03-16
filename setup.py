@@ -23,7 +23,7 @@ setuptools.setup(
             "Topic :: System :: Benchmark",
             "Operating System :: OS Independent",
         ],
-        install_requires=['numpy','matplotlib','flask'],
+        install_requires=['numpy','matplotlib','flask', 'pandas'],
         python_requires='>=3.8',
         entry_points={
             'console_scripts': [

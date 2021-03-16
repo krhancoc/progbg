@@ -202,7 +202,7 @@ class Execution:
 
     def print(self, string):
         """Pretty printer for execution"""
-        print("\033[1;31m[{} - {}]:\033[0m {}".format(name, self.bench.name, string))
+        print("\033[1;31m[{} - {}]:\033[0m {}".format(self.name, self.bench.name, string))
 
     def tables(self):
         """
