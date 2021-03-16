@@ -3,8 +3,10 @@ from typing import List, Dict
 
 from .globals import _sb_executions
 
+
 class MatchParser:
     """MatchParser class takes regex matches and on success run a given function"""
+
     def __init__(self, match_rules: Dict):
         """Match parser init
         Arguments:
@@ -33,10 +35,9 @@ class MatchParser:
                 output = tup[1](line)
                 if len(output) != len(tup[0]):
                     raise Exception("Function provided outputed {} values, expected {}"
-                            .format(len(output), len(tup[0])))
+                                    .format(len(output), len(tup[0])))
                 for match in zip(tup[0], output):
                     obj[match[0]] = match[1]
-
 
     def param_exists(self, name: str) -> bool:
         """Check if a param exists as an output of the parser"""
@@ -69,16 +70,18 @@ class MatchParser:
 
         return obj
 
+
 class FileParser:
     """ FileParser class parses an entire file pointed to by the path variable using a user
     defined function
-    
+
     Arguments:
     names: Name bindings for the expected output from func.    
     func: A function of the form `def func(path): ...` where path is the name
     of the file to be parsed.   Func should return a list that is the same
     length as names.
     """
+
     def __init__(self, names: List[str], func):
         self.func = func
         self.names = names
@@ -94,6 +97,9 @@ class FileParser:
     def parse(self, path, bench_args, backend_args) -> List:
         """Parse the whole file at path"""
         vals = self.func(path)
+        if vals == None:
+            return None
+
         if len(vals) != len(self.names):
             raise Exception("Issue with provided function, returned {} vals, expected {}".format(
                 str(len(vals)), str(len(self.names))))
@@ -111,5 +117,3 @@ class FileParser:
         obj.update(execution.reverse_file_out(path))
 
         return obj
-
-
