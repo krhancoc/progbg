@@ -24,9 +24,9 @@ $ pip install progbg
 
 Quick Start
 -----------
-Firsty let's define the following terms:
+Let's define the following terms:
 
-1. **Execution** are composed of backends and a benchmark. They form the **running** component of progbg
+1. **Executions** are composed of backends and a benchmark. They form the **running** component of progbg
 2. **Backend**: The system underlying system you may be trying to test.  This is setup prior to running a benchmark.  Benchmarks
 can be composed using path style syntax (See below for an example).
 3. **Benchmark**: An application that runs on a backend and produces data output, using a given parser.
