@@ -50,5 +50,4 @@ def format_fig(fig, axes, formatter):
 
     for option, arg in formatter.items():
         supported_options[option](fig, axes, arg)
-
-    fig.tight_layout()
+    #fig.tight_layout()
