@@ -7,6 +7,7 @@ import matplotlib as mpl
 
 SimpleType = Union[int, str, float]
 
+
 def _change_height(fig: mpl.figure.Figure, axes: mpl.axes.Axes, arg: float):
     fig.set_figheight(arg)
 
@@ -21,6 +22,7 @@ supported_options = {
 }
 
 default_formatter = {}
+
 
 def check_formatter(formatter: Dict[str, SimpleType]):
     """
@@ -50,4 +52,3 @@ def format_fig(fig, axes, formatter):
 
     for option, arg in formatter.items():
         supported_options[option](fig, axes, arg)
-    #fig.tight_layout()

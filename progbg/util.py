@@ -12,9 +12,11 @@ from .globals import _sb_rnames
 def silence_print():
     sys.stdout = open(os.devnull, 'w')
 
+
 def restore_print():
     sys.stdout.close()
     sys.stdout = sys.__stdout__
+
 
 def error(strn: str):
     print("\033[0;31m[Error]:\033[0m {}".format(strn))
@@ -27,6 +29,7 @@ def dump_obj(file: str, obj: Dict):
         for key, val in obj.items():
             line = "{}={}\n".format(key, val)
             ofile.write(line)
+
 
 def retrieve_obj(file: str) -> Dict:
     """Retrieve dictionary from file key=val"""
@@ -41,6 +44,7 @@ def retrieve_obj(file: str) -> Dict:
                 exit(0)
     return obj
 
+
 class Variables:
     """
     Variables is a container class for variables for a given execution
@@ -52,6 +56,7 @@ class Variables:
         const: A dictionary of argument names to values that will be passed
         var: A tuple of an argument name and some iterable object
     """
+
     def __init__(self, consts: Dict = None,
                  var: List[Tuple[str, List]] = None) -> None:
         if len(var):
@@ -99,14 +104,13 @@ class Variables:
 
         return args
 
-
     def param_exists(self, name: str) -> bool:
         """Checks if a variable is defined either as a constant or a varrying variable"""
-        return (name in self.consts) or any([ name == x[0] for x in self.var])
+        return (name in self.consts) or any([name == x[0] for x in self.var])
 
     def y_names(self) -> List[str]:
         """Returns the names of varrying or responding variables"""
-        return [ x[0] for x in self.var ]
+        return [x[0] for x in self.var]
 
     def const_names(self) -> List[str]:
         """Returns names of constants"""
@@ -140,7 +144,7 @@ class Backend:
     @property
     def path_sql(self):
         return "_b_".join(self.backends)
-    
+
     @property
     def path_user(self):
         return "/".join(self.backends)
@@ -151,6 +155,4 @@ class Backend:
 
     def __eq__(self, path):
         return (self.path_sql == path) or (self.path_out == path) or \
-                (self.path_user == path)
-
-
+            (self.path_user == path)

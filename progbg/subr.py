@@ -12,7 +12,9 @@ import numpy as np
 from .globals import _sb_executions
 
 Axes = Tuple[List[float], List[float], List[float]]
-def check_one_varying(benchmarks: List[Dict], extras: List[str]=[]):
+
+
+def check_one_varying(benchmarks: List[Dict], extras: List[str] = []):
     """Check whether a given benchmark has only one varrying variable
     Arguments:
         benchmarks: List of parsed benchmark objects
@@ -26,7 +28,7 @@ def check_one_varying(benchmarks: List[Dict], extras: List[str]=[]):
     varying.extend(extras)
     varying.append('_iter')
 
-    consts = { k:v for k, v in benchmarks[0].items() if k not in varying }
+    consts = {k: v for k, v in benchmarks[0].items() if k not in varying}
     for bench in benchmarks[1:]:
         for key, val in bench.items():
             if key in varying:
@@ -37,18 +39,18 @@ def check_one_varying(benchmarks: List[Dict], extras: List[str]=[]):
             else:
                 if str(consts[key]) != str(val):
                     print("Only one variable should be changing in the graph: {}"
-                            .format(key))
+                          .format(key))
                     exit(0)
 
 
-def aggregate_list(group, filter_func = None):
+def aggregate_list(group, filter_func=None):
     init_size = len(group)
     size = init_size
     while len(group):
         if filter_func and (not filter_func(group[0])):
             size -= 1
             group.pop(0)
-            continue;
+            continue
         first = dict(group[0])
         break
 
@@ -74,9 +76,10 @@ def aggregate_list(group, filter_func = None):
                 if not group[i][k]:
                     continue
             except:
-                print("Problem with Benchmark {}: Iteration {}".format(group[i]['_execution_name'], group[i]['_iter']))
+                print("Problem with Benchmark {}: Iteration {}".format(
+                    group[i]['_execution_name'], group[i]['_iter']))
                 print(group[i])
-                continue;
+                continue
 
             try:
                 val = float(group[i][k])
@@ -88,7 +91,7 @@ def aggregate_list(group, filter_func = None):
     return first
 
 
-def aggregate_bench(group: List[Dict], filter_func = None) -> Dict:
+def aggregate_bench(group: List[Dict], filter_func=None) -> Dict:
     """Aggregation helper function"""
     first = aggregate_list(group, filter_func)
     for k in first.keys():
