@@ -1,11 +1,12 @@
 import progbg as sb
 import time
+import os
 from random import randint
 
 @sb.registerbackend
 class FFS:
     @staticmethod
-    def init(myvar = 10, pass_me_in = 5):
+    def start(myvar = 10, pass_me_in = 5):
         print("FFS Backend initing {} {}".format(myvar, pass_me_in))
 
     @staticmethod
@@ -15,7 +16,7 @@ class FFS:
 @sb.registerbackend
 class BCK:
     @staticmethod
-    def init(another_var = 2):
+    def start(another_var = 2):
         print("BCK Backend initing {}".format(another_var))
 
     @staticmethod
@@ -25,7 +26,7 @@ class BCK:
 @sb.registerbackend
 class Tomcat:
     @staticmethod
-    def init(tom_var = 2):
+    def start(tom_var = 2):
         print("TOM Backend initing {}".format(tom_var))
 
     @staticmethod
@@ -34,7 +35,7 @@ class Tomcat:
 
 
 @sb.registerbenchmark
-class WRK:
+class Wrk:
     @staticmethod
     def run(backend, outfile, test = 5, x = 10):
         # DO STUFF
@@ -50,186 +51,51 @@ class WRK:
 def func(line):
     return [x.strip() for x in line.split()[1:]]
 
-def file_func(path):
+def file_func(metrics, path):
     with open(path, 'r') as file:
         for line in file.readlines():
             if "Latency" in line:
-                return [x.strip() for x in line.split()[1:]]
+                vals = [int(x.strip()) for x in line.split()[1:]]
+                metrics.add_metric("low" , vals[0])
+                metrics.add_metric("mid", vals[1])
+                metrics.add_metric("high",  vals[2])
 
-    return None
 
-# Test file output without backend
-sb.plan_execution("wrk1",
-    sb.DefBenchmark("wrk",
-        sb.Variables(
-            consts = {},
-            var = [("x" ,range(0, 3, 1)), ("test", range(0, 5, 2))]
-        ),
-        iterations = 5,
-        parse = sb.MatchParser(
-            {
-                "^Latency": (
-                    ["avg", "max", "min"], func
-                )
-            },
-        )
-    ),
+def text_parser(metrics, path):
+    metrics.add_metric("low", 100)
+
+composed_backend = sb.compose_backends(Tomcat, FFS)
+#Test file output without backend
+exec = sb.plan_execution(
+    Wrk({}, [("x", range(0, 5))], iterations = 5),
     out = "out",
+    backends = [composed_backend({}, 
+        [("pass_me_in", range(0, 10, 2))])],
+    parser = file_func,
 )
 
-# Test sqlite output with backend
-sb.plan_execution("wrk2",
-    sb.DefBenchmark("wrk",
-        sb.Variables(
-            consts = {
-                "test" : 2
+exec2 = sb.plan_parse("tests/test.txt", text_parser)
+
+bf = sb.BarFactory(exec)
+sb.plan_graph("Values and Jazz",
+        sb.BarGraph(
+            [
+                [bf("low", "custom-label1"), bf(["low", "mid"]), bf("low")], 
+                [bf("low"), bf("low")],
+                [bf("low"), bf(["low", "mid", "high"], "otherlabel")]
+            ],
+            inner_labels = ["label-1", "label-2"],
+            group_labels = ["yolo-1", "yolo-2"],
+            restrict_on = {
+                "pass_me_in": 0,
+                "x": 0,
             },
-            var = [("x" ,range(0, 3, 1))]
-        ),
-        iterations = 5,
-        parse = sb.FileParser(["avg", "max", "min"], file_func),
-    ),
-    {
-        'ffs/tomcat': sb.Variables(
-            consts = {
-                "myvar": 5
-            },
-            var = [("pass_me_in", range(0, 10, 2))]
-        ),
-        'bck': sb.Variables(
-            consts = {},
-            var = [("another_var", [1, 5 ,7])]
+            width = 0.5,
+            out = "test.svg"
         )
-    },
-    out = "out.db",
-)
-
-# Test benchmark with backend and directory output
-sb.plan_execution("wrk3",
-    sb.DefBenchmark("wrk",
-        sb.Variables(
-            consts = {
-                "test" : 2
-            },
-            var = [("x" ,range(0, 3, 1))]
-        ),
-        iterations = 5,
-        parse = sb.MatchParser(
-            {
-                "^Latency": (
-                    ["avg", "max", "min"], func
-                )
-            },
-        )
-    ),
-    {
-        'ffs/tomcat': sb.Variables(
-            consts = {
-                "myvar": 5
-            },
-            var = [("pass_me_in", range(0, 10, 2))]
-        ),
-        'bck': sb.Variables(
-            consts = {},
-            var = [("another_var", [1, 5 ,7])]
-        )
-    },
-    out = "out",
-)
-
-# Test sql output without backend
-sb.plan_execution("wrk4",
-    sb.DefBenchmark("wrk",
-        sb.Variables(
-            consts = {},
-            var = [("x" ,range(0, 3, 1)), ("test", range(0, 5, 2))]
-        ),
-        iterations = 5,
-        parse = sb.MatchParser(
-            {
-                "^Latency": (
-                    ["avg", "max", "min"], func
-                )
-            },
-        )
-    ),
-    out = "out.db",
-)
-
-sb.plan_graph("graph-1",
-    sb.LineGraph(
-        "x",
-        "avg",
-        ["wrk2:ffs/tomcat", "wrk2:bck","wrk1"],
-        {
-            "pass_me_in": 4,
-            "another_var": 5,
-            "test" : 2,
-        },
-        out = "avg.svg"
-    ),
-)
-
-sb.plan_graph("graph-2",
-    sb.LineGraph(
-        'x',
-        "min",
-        ["wrk2:ffs/tomcat", "wrk1"],
-        {
-            'pass_me_in': 4,
-            "test" : 2
-        },
-        out = "min.svg"
-    ),
-)
-sb.plan_graph("graph-3",
-    sb.BarGraph(
-            ["min", "avg", "max"],
-            ["wrk2:ffs/tomcat", "wrk2:bck", "wrk3:bck"],
-            {
-                'pass_me_in': 4,
-                'test': 2,
-                'x': 0,
-                "another_var": 5,
-            },
-            group_by=sb.GroupBy.EXECUTION,
-            out = "samplebar.svg"
-    ),
-)
-
-sb.plan_graph("graph-4",
-    sb.BarGraph(
-            ["min", "avg", "max"],
-            ["wrk2:ffs/tomcat", "wrk2:bck"],
-            {
-                'pass_me_in': 4,
-                'test': 2,
-                'x': 0,
-                "another_var": 5,
-            },
-            group_by=sb.GroupBy.OUTPUT,
-            out = "samplebar_output.svg"
-    ),
 )
 
 
-sb.plan_figure("fig-1",
-        [["graph-1", "graph-4"],
-         ["graph-2", "graph-3"]],
-        {
-            "height": 6,
-            "width": 6,
-        },
-        out  = "samplefig.svg"
-)
 
-def myformatter(figure, axes):
-    figure.set_figwidth(10)
-    figure.suptitle("Title for this figure")
-    figure.tight_layout()
 
-sb.plan_figure("fig-2",
-        [["graph-1", "graph-2"]],
-        myformatter,
-        out  = "samplefigform.svg"
-)
+

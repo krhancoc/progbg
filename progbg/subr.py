@@ -70,7 +70,11 @@ def aggregate_bench(group: List[Dict]) -> Dict:
             continue
 
         if not isinstance(first[k][0], str):
-            first[k] = (np.mean(first[k]), np.std(first[k]))
+            if k + "_std" in first:
+                assert len(first[k]) == 1
+                first[k] = (first[k][0], first[k + "_std"])
+            else:
+                first[k] = (np.mean(first[k]), np.std(first[k]))
 
     return first
 

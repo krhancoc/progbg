@@ -22,7 +22,6 @@ supported_options = {
 
 default_formatter = {}
 
-
 def check_formatter(formatter: Dict[str, SimpleType]):
     """
     Checks options for formatting

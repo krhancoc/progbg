@@ -2,7 +2,7 @@
 
 _sb_registered_benchmarks = {}
 _sb_registered_backend = {}
-_sb_executions = {}
+_sb_executions = []
 _sb_graphs = {}
 _sb_figures = {}
 """Registration globals
