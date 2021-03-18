@@ -11,7 +11,7 @@ your benchmarks through the registering of workloads and backends. Data produced
 needed to create custom graphs.
 
 
-More information and docs can be found [here](docs/index.md)
+More information and docs can be found [here](https://krhancoc.github.io/progbg/)
 
 Installation
 ------------

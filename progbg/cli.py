@@ -2,7 +2,6 @@
 
 This module processes and handles all command line interface input
 and dispatches commands to the proper area
-
 """
 # pylint: disable-msg=E0611,E0401
 

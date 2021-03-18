@@ -2,15 +2,9 @@
 
 """Core API calls and classes for ProgBG
 
-This module contains all the related API calls for creating and managing
-t.format(str(bench_args[val]))ihe plan.py files, graphing is handled within graphing.py.
-
-sA special case we have to handling is the handling of global variables
-within ProgBG. Since we dynamically pull in a users file, their module
-has a different set of globals then ours, so upon importing their
-python file we must edit our globals to be equivalent to theirs.
-This can be seen in the function import_plan.
-
+This module contains all related API calls for creating and managing
+plan.py files. Special global variables are used to keep track
+of registered backends and benchmarks.
 """
 
 import os

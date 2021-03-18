@@ -2,7 +2,7 @@
 """
 Graphing Module
 
-Holds all related code around the different graphs the progbg supports
+This module handles the various graph classes that progbg supports
 """
 from typing import List, Dict
 from pprint import pformat
@@ -54,42 +54,6 @@ pgf_with_pdflatex = {
 }
 
 mpl.rcParams.update(pgf_with_pdflatex)
-
-
-def reformat_large(tick_val):
-    if tick_val >= 1000000000:
-        val = round(tick_val / 1000000000, 1)
-        new_tick_format = '{:}B'.format(val)
-    elif tick_val >= 1000000:
-        val = round(tick_val / 1000000, 1)
-        new_tick_format = '{:}M'.format(val)
-    elif tick_val >= 1000:
-        val = round(tick_val / 1000, 1)
-        new_tick_format = '{:}K'.format(val)
-    else:
-        new_tick_format = tick_val
-
-    new_tick_format = str(new_tick_format)
-
-    index_of_decimal = new_tick_format.find(".")
-    if index_of_decimal != -1:
-        value_after_decimal = new_tick_format[index_of_decimal + 1]
-        if value_after_decimal == "0":
-            new_tick_format = new_tick_format[0:index_of_decimal] + \
-                new_tick_format[index_of_decimal + 2:]
-
-    return new_tick_format
-
-
-def normalize(group_list, index_to):
-    normal = group_list[index_to]
-    final_list = []
-    for group in group_list:
-        stddev = group[1] / group[0]
-        newval = group[0] / normal[0]
-        final_list.append((newval, stddev * newval))
-    return final_list
-
 
 def _is_good(benchmark, restriction):
     for key, val in restriction.items():
@@ -250,12 +214,23 @@ def filter(metrics, restrict_dict):
 
 
 class BarGraph:
-    """progbg Bar Graph"""
+    """Bar Graph
+
+    ProgBG Bar Graph implementation.
+    Arguments:
+        workloads (List): A list of list of bars.  Each list is a grouping of bars to be graphs. Meaning
+        bars within the same list will be grouped together.
+        group_labels (List): Labels associated to each grouped list in workloads.  It should be that
+        len(group_labels) == len(workloads)
+        formatter (Function(fig, axes), optional): Function object that takes the figure and axes as an argument. Allows for
+        post customization of graphs.
+        width (float): Width of each bar
+        out (Path): Output file for this single graph to be saved to
+    """
 
     def __init__(
             self,
             workloads: List,
-            inner_labels,
             group_labels,
             formatter=None,
             restrict_on=None,
@@ -268,6 +243,9 @@ class BarGraph:
         self.restrict_on = restrict_on
         self.width = width
         self.gl = group_labels
+
+        assert len(self.gl) == len(self.workloads)
+
         self.il = inner_labels
         self.formatter = formatter
 
