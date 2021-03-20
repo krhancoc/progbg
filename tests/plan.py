@@ -84,8 +84,7 @@ sb.plan_graph("Values and Jazz",
                 [bf("low"), bf("low")],
                 [bf("low"), bf(["low", "mid", "high"], "otherlabel")]
             ],
-            inner_labels = ["label-1", "label-2"],
-            group_labels = ["yolo-1", "yolo-2"],
+            group_labels = ["yolo-1", "yolo-2", "yolo-3"],
             restrict_on = {
                 "pass_me_in": 0,
                 "x": 0,

@@ -47,7 +47,6 @@ import numpy as np
 from .globals import _sb_executions
 from .subr import retrieve_axes, check_one_varying
 from .subr import aggregate_bench, aggregate_list
-from .format import check_formatter
 from .util import Backend, retrieve_obj, error
 
 mpl.use(&#34;pgf&#34;)
@@ -93,41 +92,6 @@ def _is_good(benchmark, restriction):
             return False
 
     return True
-
-
-def check_workloads_and_restrictions(workloads, restrict, params):
-    &#34;&#34;&#34;
-    Checks workload, given the restriction and parameters given
-    is correct
-    &#34;&#34;&#34;
-    for workload_path in workloads:
-        path = workload_path.split(&#34;:&#34;)
-        workload = path[0]
-        if workload not in _sb_executions:
-            error(&#34;Undefined workload in for graph: {}&#34;.format(workload))
-        for param in params:
-            if not _sb_executions[workload].param_exists(param):
-                error(&#34;Workload {} has {} undefined&#34;.format(
-                    workload, param))
-
-        if len(path) == 2:
-            if not _sb_executions[workload].backends:
-                error(&#34;Workload does not define a backend to run on: {}&#34;
-                      .format(workload_path))
-
-            if path[1] not in _sb_executions[workload].backends:
-                error(&#34;Graph wishes to graph non-existent backend in workload: {}&#34;
-                      .format(path[1]))
-
-        if len(path) &gt; 2:
-            error(&#34;Undefined workload/backend pair: {}&#34;.format(workload_path))
-
-    for key in restrict.keys():
-        output = any([_sb_executions[work.split(&#34;:&#34;)[0]].param_exists(key)
-                      for work in workloads])
-        if not output:
-            print(output)
-            error(&#34;Unrecognized key for retrict constraint: {}&#34;.format(key))
 
 
 def _retrieve_data_files(execution, restriction):
@@ -193,7 +157,7 @@ def _retrieve_data_db(execution, restriction):
     return benchmarks
 
 
-def retrieve_relavent_data(workloads: str, restriction: Dict):
+def _retrieve_relavent_data(workloads: str, restriction: Dict):
     &#34;&#34;&#34;
     Grab the workloads string, and retrictions and filter out the data within the specified out
     backend, this can either be a file or an sqllite3 db.
@@ -216,7 +180,7 @@ def retrieve_relavent_data(workloads: str, restriction: Dict):
     return final_args
 
 
-def calculate_ticks(group_len: int, width: float):
+def _calculate_ticks(group_len: int, width: float):
     &#34;&#34;&#34;Given some group size, and width calculate
     where ticks would occur.
 
@@ -235,7 +199,9 @@ def calculate_ticks(group_len: int, width: float):
     return temp
 
 
-def filter(metrics, restrict_dict):
+def filter(metrics: List, restrict_dict: Dict):
+    &#34;&#34;&#34;Filter a list of metrics given a restriction dict
+    &#34;&#34;&#34;
     final_metric = []
     for metric in metrics:
         if all(item in metric.get_stats().items() for item in restrict_dict.items()):
@@ -246,16 +212,34 @@ def filter(metrics, restrict_dict):
 class BarGraph:
     &#34;&#34;&#34;Bar Graph
 
-    ProgBG Bar Graph implementation.
-    Arguments:
-        workloads (List): A list of list of bars.  Each list is a grouping of bars to be graphs. Meaning
-        bars within the same list will be grouped together.
-        group_labels (List): Labels associated to each grouped list in workloads.  It should be that
-        len(group_labels) == len(workloads)
-        formatter (Function(fig, axes), optional): Function object that takes the figure and axes as an argument. Allows for
-        post customization of graphs.
+    Args:
+        workloads (List): A list of list of bars.  Each list is a grouping of bars to be graphs.
+        group_labels (List): Labels associated to each grouped list in workloads.
+        formatter (Function, optional): Function object for post customization of graphs.
         width (float): Width of each bar
         out (Path): Output file for this single graph to be saved to
+
+    Examples:
+        Suppose we have some previously defined execution called `exec`.
+
+        &gt;&gt;&gt; exec = plan_execution(...)
+        &gt;&gt;&gt; bar1 = Bar(exec, &#34;stat-one&#34;, label=&#34;Custom Stat&#34;)
+        &gt;&gt;&gt; bar2 = Bar(exec, &#34;stat-two&#34;, label=&#34;Custom Stat Two&#34;)
+        &gt;&gt;&gt; plan_graph(&#34;Graph Title - Grouped&#34;,
+        &gt;&gt;&gt;     BarGraph([[bar1, bar2]],
+        &gt;&gt;&gt;         group_labels=[&#34;These a grouped!&#34;],
+        &gt;&gt;&gt;         out=&#34;custom.svg&#34;
+        &gt;&gt;&gt;     )
+
+        The above example would create a graph grouping both bar1, and bar2 next to each other. The below example
+        would seperate bar1 and bar2. &#34;stat-one&#34;, and &#34;stat-two&#34;, are both values that would have been added to the
+        associated `core.Metrics` object which is passed through the parser functions provided by the user.
+
+        &gt;&gt;&gt; plan_graph(&#34;Graph Title - Seperate&#34;,
+        &gt;&gt;&gt;     BarGraph([[bar1], [bar2]],
+        &gt;&gt;&gt;         group_labels=[&#34;Group 1!&#34;, &#34;Group 2!&#34;],
+        &gt;&gt;&gt;         out=&#34;custom.svg&#34;
+        &gt;&gt;&gt;     )
     &#34;&#34;&#34;
 
     def __init__(
@@ -276,10 +260,9 @@ class BarGraph:
 
         assert len(self.gl) == len(self.workloads)
 
-        self.il = inner_labels
         self.formatter = formatter
 
-    def graph(self, ax, silent=False):
+    def _graph(self, ax, silent=False):
 
         flatten = [x for sub in self.workloads for x in sub]
         # We create a matrix that is the number of bars wide, and the number
@@ -298,7 +281,7 @@ class BarGraph:
             arr = np.zeros(len(column_space))
             metrics = filter(wl.workload._cached, self.restrict_on)
             if (len(metrics) &gt; 1):
-                self.print(
+                self._print(
                     &#34;Warning: Restriction not fine grained enough, multiple selections are available&#34;, silent)
             metrics = metrics[0].get_stats()
             for x in wl.composed:
@@ -333,7 +316,7 @@ class BarGraph:
             x_tick_at += width + inter_space
 
         if (x_ticks[-1] + width / 2) &gt; x_tick_at_last:
-            self.print(&#34;Width param is too large, please reduce&#34;)
+            self._print(&#34;Width param is too large, please reduce&#34;)
             return
 
         for x in range(0, len(column_space)):
@@ -342,7 +325,7 @@ class BarGraph:
         ax.set_xticks([x + (width / 2) for x in x_ticks])
         ax.set_xticklabels([b.label for b in flatten])
 
-    def print(self, strn: str, silent) -&gt; None:
+    def _print(self, strn: str, silent) -&gt; None:
         &#34;&#34;&#34;Pretty printer for BarGraph&#34;&#34;&#34;
         if silent:
             return
@@ -351,6 +334,20 @@ class BarGraph:
 
 
 class Bar:
+    &#34;&#34;&#34;Bar object used within `BarGraph`
+
+    This represent a bar within a bar graph.  Its construction used an execution object.
+    Once an execution is done, metrics objects are pulled and summarized into means and standard
+    deviations.
+
+    The keys within the `core.Metrics` are used to compose bars.  You may select just one.
+    But optionally you may compose bars of many metrics (See matplotlibs stacked bar).
+
+    Args:
+        wl (Execution):  Execution object to use
+        composed_of (List, str): A key for the data to use, or optionally a list of keys
+        label (str): Label of the bar
+    &#34;&#34;&#34;
     def __init__(self, wl, composed_of, label):
         if isinstance(composed_of, str, ):
             self.composed = [composed_of]
@@ -361,6 +358,10 @@ class Bar:
 
 
 class BarFactory:
+    &#34;&#34;&#34;Ease of use Factory Class
+
+    Used to quickly be able to make many bars from one Execution object
+    &#34;&#34;&#34;
     def __init__(self, wl):
         self.workload = wl
 
@@ -390,9 +391,9 @@ class Histogram:
         self.formatter = formatter
         self.out = out
 
-    def graph(self, ax, silent=False):
-        self.print(&#34;Graphing&#34;, silent)
-        benchmarks = retrieve_relavent_data([self.workload], [])[self.workload]
+    def _graph(self, ax, silent=False):
+        self._print(&#34;Graphing&#34;, silent)
+        benchmarks = _retrieve_relavent_data([self.workload], [])[self.workload]
         aggregate = aggregate_list(benchmarks, self.filter_func)
 
         default_kwargs = {
@@ -407,7 +408,7 @@ class Histogram:
 
         ax.hist(aggregate[self.label], **default_kwargs)
 
-    def print(self, strn: str, silent) -&gt; None:
+    def _print(self, strn: str, silent) -&gt; None:
         &#34;&#34;&#34;Pretty printer for LineGraph&#34;&#34;&#34;
         if silent:
             return
@@ -435,9 +436,9 @@ class CustomGraph:
             self.restrict = dict()
         self.out = out
 
-    def graph(self, ax, silent=False):
+    def _graph(self, ax, silent=False):
         self.aggregation = dict()
-        for work, benchmark in retrieve_relavent_data(self.workloads, self.restrict).items():
+        for work, benchmark in _retrieve_relavent_data(self.workloads, self.restrict).items():
             self.aggregation[work] = aggregate_bench(benchmark, self.filter)
         self.graph_func(ax, self.aggregation)
 
@@ -445,13 +446,12 @@ class CustomGraph:
 class LineGraph:
     &#34;&#34;&#34;progbg Line Graph
 
-    Arguments:
-        x: attribute you wish to plot its change
-        y: attribute you wish to see respond to the change in x
-        workloads: Workloads that the line graph will use in the WRK:BCK1/BCK2 format
-        formatter: Optional formatter to be used on the graph once the graph is complete
-        out: Optional name for file the user wishes to save the graph too.  We automatically always produce
-        a .svg file.  Current supported extensions are: .svg, .pgf, .png. 
+    Args:
+        x (str): attribute you wish to plot its change
+        y (str): attribute you wish to see respond to the change in x
+        workloads (List): Workloads that the line graph will use in the WRK:BCK1/BCK2 format
+        formatter (Function, optional): Formatter to be used on the graph once the graph is complete
+        out (str, optional): Optional name for file the user wishes to save the graph too.
     &#34;&#34;&#34;
 
     def __init__(
@@ -463,9 +463,6 @@ class LineGraph:
             formatter: Dict = None,
             out: str = None):
 
-        check_workloads_and_restrictions(workloads, restrict, [x, y])
-        check_formatter(formatter)
-
         self.formatter = None
         self.x_name = x
         self.y_name = y
@@ -474,21 +471,21 @@ class LineGraph:
         self.restrict = restrict
         self.aggregation = None
 
-    def print(self, strn: str, silent) -&gt; None:
+    def _print(self, strn: str, silent) -&gt; None:
         &#34;&#34;&#34;Pretty printer for LineGraph&#34;&#34;&#34;
         if silent:
             return
 
         print(&#34;\033[1;34m[{}]:\033[0m {}&#34;.format(self.out, strn))
 
-    def graph(self, ax, silent=False):
+    def _graph(self, ax, silent=False):
         &#34;&#34;&#34; Create the line graph
         Arguments:
             ax: Axes object to attach data too
         &#34;&#34;&#34;
-        self.print(&#34;Graphing&#34;, silent)
+        self._print(&#34;Graphing&#34;, silent)
         self.aggregation = dict()
-        for work, benchmark in retrieve_relavent_data(self.workloads, self.restrict).items():
+        for work, benchmark in _retrieve_relavent_data(self.workloads, self.restrict).items():
             check_one_varying(benchmark, extras=[self.x_name])
             x, y, ystd, self.aggregation[work] = retrieve_axes(
                 benchmark, self.x_name, self.y_name)
@@ -506,129 +503,23 @@ class LineGraph:
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt id="progbg.graphing.calculate_ticks"><code class="name flex">
-<span>def <span class="ident">calculate_ticks</span></span>(<span>group_len: int, width: float)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Given some group size, and width calculate
-where ticks would occur.</p>
-<p>Meant for bar graphs</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def calculate_ticks(group_len: int, width: float):
-    &#34;&#34;&#34;Given some group size, and width calculate
-    where ticks would occur.
-
-    Meant for bar graphs
-    &#34;&#34;&#34;
-    if group_len % 2 == 0:
-        start = ((int(group_len / 2) - 1) * width * -1) - (width / 2.0)
-    else:
-        start = (int((group_len / 2)) * width * -1)
-
-    temp = []
-    offset = start
-    for _ in range(0, group_len):
-        temp.append(offset)
-        offset += width
-    return temp</code></pre>
-</details>
-</dd>
-<dt id="progbg.graphing.check_workloads_and_restrictions"><code class="name flex">
-<span>def <span class="ident">check_workloads_and_restrictions</span></span>(<span>workloads, restrict, params)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Checks workload, given the restriction and parameters given
-is correct</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def check_workloads_and_restrictions(workloads, restrict, params):
-    &#34;&#34;&#34;
-    Checks workload, given the restriction and parameters given
-    is correct
-    &#34;&#34;&#34;
-    for workload_path in workloads:
-        path = workload_path.split(&#34;:&#34;)
-        workload = path[0]
-        if workload not in _sb_executions:
-            error(&#34;Undefined workload in for graph: {}&#34;.format(workload))
-        for param in params:
-            if not _sb_executions[workload].param_exists(param):
-                error(&#34;Workload {} has {} undefined&#34;.format(
-                    workload, param))
-
-        if len(path) == 2:
-            if not _sb_executions[workload].backends:
-                error(&#34;Workload does not define a backend to run on: {}&#34;
-                      .format(workload_path))
-
-            if path[1] not in _sb_executions[workload].backends:
-                error(&#34;Graph wishes to graph non-existent backend in workload: {}&#34;
-                      .format(path[1]))
-
-        if len(path) &gt; 2:
-            error(&#34;Undefined workload/backend pair: {}&#34;.format(workload_path))
-
-    for key in restrict.keys():
-        output = any([_sb_executions[work.split(&#34;:&#34;)[0]].param_exists(key)
-                      for work in workloads])
-        if not output:
-            print(output)
-            error(&#34;Unrecognized key for retrict constraint: {}&#34;.format(key))</code></pre>
-</details>
-</dd>
 <dt id="progbg.graphing.filter"><code class="name flex">
-<span>def <span class="ident">filter</span></span>(<span>metrics, restrict_dict)</span>
+<span>def <span class="ident">filter</span></span>(<span>metrics: List, restrict_dict: Dict)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Filter a list of metrics given a restriction dict</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def filter(metrics, restrict_dict):
+<pre><code class="python">def filter(metrics: List, restrict_dict: Dict):
+    &#34;&#34;&#34;Filter a list of metrics given a restriction dict
+    &#34;&#34;&#34;
     final_metric = []
     for metric in metrics:
         if all(item in metric.get_stats().items() for item in restrict_dict.items()):
             final_metric.append(metric)
     return final_metric</code></pre>
-</details>
-</dd>
-<dt id="progbg.graphing.retrieve_relavent_data"><code class="name flex">
-<span>def <span class="ident">retrieve_relavent_data</span></span>(<span>workloads: str, restriction: Dict)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Grab the workloads string, and retrictions and filter out the data within the specified out
-backend, this can either be a file or an sqllite3 db.</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def retrieve_relavent_data(workloads: str, restriction: Dict):
-    &#34;&#34;&#34;
-    Grab the workloads string, and retrictions and filter out the data within the specified out
-    backend, this can either be a file or an sqllite3 db.
-    &#34;&#34;&#34;
-    final_args = dict()
-    for work in workloads:
-        restrict = dict(restriction)
-        path = work.split(&#39;:&#39;)
-        restrict[&#34;_execution_name&#34;] = path[0]
-        if len(path) == 2:
-            restrict[&#34;_backend&#34;] = Backend.user_to_out(path[1])
-        execution = _sb_executions[path[0]]
-        if execution.is_sql_backed():
-            benchmark = _retrieve_data_db(execution, restrict)
-        else:
-            benchmark = _retrieve_data_files(execution, restrict)
-
-        final_args[work] = benchmark
-
-    return final_args</code></pre>
 </details>
 </dd>
 </dl>
@@ -641,12 +532,42 @@ backend, this can either be a file or an sqllite3 db.</p></div>
 <span>(</span><span>wl, composed_of, label)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Bar object used within <code><a title="progbg.graphing.BarGraph" href="#progbg.graphing.BarGraph">BarGraph</a></code></p>
+<p>This represent a bar within a bar graph.
+Its construction used an execution object.
+Once an execution is done, metrics objects are pulled and summarized into means and standard
+deviations.</p>
+<p>The keys within the <code>core.Metrics</code> are used to compose bars.
+You may select just one.
+But optionally you may compose bars of many metrics (See matplotlibs stacked bar).</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>wl</code></strong> :&ensp;<code>Execution</code></dt>
+<dd>Execution object to use</dd>
+<dt><strong><code>composed_of</code></strong> :&ensp;<code>List, str</code></dt>
+<dd>A key for the data to use, or optionally a list of keys</dd>
+<dt><strong><code>label</code></strong> :&ensp;<code>str</code></dt>
+<dd>Label of the bar</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class Bar:
+    &#34;&#34;&#34;Bar object used within `BarGraph`
+
+    This represent a bar within a bar graph.  Its construction used an execution object.
+    Once an execution is done, metrics objects are pulled and summarized into means and standard
+    deviations.
+
+    The keys within the `core.Metrics` are used to compose bars.  You may select just one.
+    But optionally you may compose bars of many metrics (See matplotlibs stacked bar).
+
+    Args:
+        wl (Execution):  Execution object to use
+        composed_of (List, str): A key for the data to use, or optionally a list of keys
+        label (str): Label of the bar
+    &#34;&#34;&#34;
     def __init__(self, wl, composed_of, label):
         if isinstance(composed_of, str, ):
             self.composed = [composed_of]
@@ -661,12 +582,17 @@ backend, this can either be a file or an sqllite3 db.</p></div>
 <span>(</span><span>wl)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Ease of use Factory Class</p>
+<p>Used to quickly be able to make many bars from one Execution object</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class BarFactory:
+    &#34;&#34;&#34;Ease of use Factory Class
+
+    Used to quickly be able to make many bars from one Execution object
+    &#34;&#34;&#34;
     def __init__(self, wl):
         self.workload = wl
 
@@ -682,18 +608,40 @@ backend, this can either be a file or an sqllite3 db.</p></div>
 </code></dt>
 <dd>
 <div class="desc"><p>Bar Graph</p>
-<p>ProgBG Bar Graph implementation.</p>
-<h2 id="arguments">Arguments</h2>
-<p>workloads (List): A list of list of bars.
-Each list is a grouping of bars to be graphs. Meaning
-bars within the same list will be grouped together.
-group_labels (List): Labels associated to each grouped list in workloads.
-It should be that
-len(group_labels) == len(workloads)
-formatter (Function(fig, axes), optional): Function object that takes the figure and axes as an argument. Allows for
-post customization of graphs.
-width (float): Width of each bar
-out (Path): Output file for this single graph to be saved to</p></div>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>workloads</code></strong> :&ensp;<code>List</code></dt>
+<dd>A list of list of bars.
+Each list is a grouping of bars to be graphs.</dd>
+<dt><strong><code>group_labels</code></strong> :&ensp;<code>List</code></dt>
+<dd>Labels associated to each grouped list in workloads.</dd>
+<dt><strong><code>formatter</code></strong> :&ensp;<code>Function</code>, optional</dt>
+<dd>Function object for post customization of graphs.</dd>
+<dt><strong><code>width</code></strong> :&ensp;<code>float</code></dt>
+<dd>Width of each bar</dd>
+<dt><strong><code>out</code></strong> :&ensp;<code>Path</code></dt>
+<dd>Output file for this single graph to be saved to</dd>
+</dl>
+<h2 id="examples">Examples</h2>
+<p>Suppose we have some previously defined execution called <code>exec</code>.</p>
+<pre><code class="python-repl">&gt;&gt;&gt; exec = plan_execution(...)
+&gt;&gt;&gt; bar1 = Bar(exec, &quot;stat-one&quot;, label=&quot;Custom Stat&quot;)
+&gt;&gt;&gt; bar2 = Bar(exec, &quot;stat-two&quot;, label=&quot;Custom Stat Two&quot;)
+&gt;&gt;&gt; plan_graph(&quot;Graph Title - Grouped&quot;,
+&gt;&gt;&gt;     BarGraph([[bar1, bar2]],
+&gt;&gt;&gt;         group_labels=[&quot;These a grouped!&quot;],
+&gt;&gt;&gt;         out=&quot;custom.svg&quot;
+&gt;&gt;&gt;     )
+</code></pre>
+<p>The above example would create a graph grouping both bar1, and bar2 next to each other. The below example
+would seperate bar1 and bar2. "stat-one", and "stat-two", are both values that would have been added to the
+associated <code>core.Metrics</code> object which is passed through the parser functions provided by the user.</p>
+<pre><code class="python-repl">&gt;&gt;&gt; plan_graph(&quot;Graph Title - Seperate&quot;,
+&gt;&gt;&gt;     BarGraph([[bar1], [bar2]],
+&gt;&gt;&gt;         group_labels=[&quot;Group 1!&quot;, &quot;Group 2!&quot;],
+&gt;&gt;&gt;         out=&quot;custom.svg&quot;
+&gt;&gt;&gt;     )
+</code></pre></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -701,16 +649,34 @@ out (Path): Output file for this single graph to be saved to</p></div>
 <pre><code class="python">class BarGraph:
     &#34;&#34;&#34;Bar Graph
 
-    ProgBG Bar Graph implementation.
-    Arguments:
-        workloads (List): A list of list of bars.  Each list is a grouping of bars to be graphs. Meaning
-        bars within the same list will be grouped together.
-        group_labels (List): Labels associated to each grouped list in workloads.  It should be that
-        len(group_labels) == len(workloads)
-        formatter (Function(fig, axes), optional): Function object that takes the figure and axes as an argument. Allows for
-        post customization of graphs.
+    Args:
+        workloads (List): A list of list of bars.  Each list is a grouping of bars to be graphs.
+        group_labels (List): Labels associated to each grouped list in workloads.
+        formatter (Function, optional): Function object for post customization of graphs.
         width (float): Width of each bar
         out (Path): Output file for this single graph to be saved to
+
+    Examples:
+        Suppose we have some previously defined execution called `exec`.
+
+        &gt;&gt;&gt; exec = plan_execution(...)
+        &gt;&gt;&gt; bar1 = Bar(exec, &#34;stat-one&#34;, label=&#34;Custom Stat&#34;)
+        &gt;&gt;&gt; bar2 = Bar(exec, &#34;stat-two&#34;, label=&#34;Custom Stat Two&#34;)
+        &gt;&gt;&gt; plan_graph(&#34;Graph Title - Grouped&#34;,
+        &gt;&gt;&gt;     BarGraph([[bar1, bar2]],
+        &gt;&gt;&gt;         group_labels=[&#34;These a grouped!&#34;],
+        &gt;&gt;&gt;         out=&#34;custom.svg&#34;
+        &gt;&gt;&gt;     )
+
+        The above example would create a graph grouping both bar1, and bar2 next to each other. The below example
+        would seperate bar1 and bar2. &#34;stat-one&#34;, and &#34;stat-two&#34;, are both values that would have been added to the
+        associated `core.Metrics` object which is passed through the parser functions provided by the user.
+
+        &gt;&gt;&gt; plan_graph(&#34;Graph Title - Seperate&#34;,
+        &gt;&gt;&gt;     BarGraph([[bar1], [bar2]],
+        &gt;&gt;&gt;         group_labels=[&#34;Group 1!&#34;, &#34;Group 2!&#34;],
+        &gt;&gt;&gt;         out=&#34;custom.svg&#34;
+        &gt;&gt;&gt;     )
     &#34;&#34;&#34;
 
     def __init__(
@@ -731,10 +697,9 @@ out (Path): Output file for this single graph to be saved to</p></div>
 
         assert len(self.gl) == len(self.workloads)
 
-        self.il = inner_labels
         self.formatter = formatter
 
-    def graph(self, ax, silent=False):
+    def _graph(self, ax, silent=False):
 
         flatten = [x for sub in self.workloads for x in sub]
         # We create a matrix that is the number of bars wide, and the number
@@ -753,7 +718,7 @@ out (Path): Output file for this single graph to be saved to</p></div>
             arr = np.zeros(len(column_space))
             metrics = filter(wl.workload._cached, self.restrict_on)
             if (len(metrics) &gt; 1):
-                self.print(
+                self._print(
                     &#34;Warning: Restriction not fine grained enough, multiple selections are available&#34;, silent)
             metrics = metrics[0].get_stats()
             for x in wl.composed:
@@ -788,7 +753,7 @@ out (Path): Output file for this single graph to be saved to</p></div>
             x_tick_at += width + inter_space
 
         if (x_ticks[-1] + width / 2) &gt; x_tick_at_last:
-            self.print(&#34;Width param is too large, please reduce&#34;)
+            self._print(&#34;Width param is too large, please reduce&#34;)
             return
 
         for x in range(0, len(column_space)):
@@ -797,106 +762,13 @@ out (Path): Output file for this single graph to be saved to</p></div>
         ax.set_xticks([x + (width / 2) for x in x_ticks])
         ax.set_xticklabels([b.label for b in flatten])
 
-    def print(self, strn: str, silent) -&gt; None:
+    def _print(self, strn: str, silent) -&gt; None:
         &#34;&#34;&#34;Pretty printer for BarGraph&#34;&#34;&#34;
         if silent:
             return
 
         print(&#34;\033[1;34m[{}]:\033[0m {}&#34;.format(self.out, strn))</code></pre>
 </details>
-<h3>Methods</h3>
-<dl>
-<dt id="progbg.graphing.BarGraph.graph"><code class="name flex">
-<span>def <span class="ident">graph</span></span>(<span>self, ax, silent=False)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def graph(self, ax, silent=False):
-
-    flatten = [x for sub in self.workloads for x in sub]
-    # We create a matrix that is the number of bars wide, and the number
-    # of categories that the bars are broken down tall. Certain bars may not
-    # be broken down at all and so those categories are zero filled
-    column_space = dict()
-    for wl in flatten:
-        for k in wl.composed:
-            column_space[k] = True
-
-    # Each unique breakdown label gets its own dimension in the column space
-    column_space = list(column_space.keys())
-    # Create each column as a row, we will just rotate matrix
-    matrix = []
-    for wl in flatten:
-        arr = np.zeros(len(column_space))
-        metrics = filter(wl.workload._cached, self.restrict_on)
-        if (len(metrics) &gt; 1):
-            self.print(
-                &#34;Warning: Restriction not fine grained enough, multiple selections are available&#34;, silent)
-        metrics = metrics[0].get_stats()
-        for x in wl.composed:
-            arr[column_space.index(x)] = metrics[x]
-        matrix.append(arr)
-    matrix = np.array(matrix)
-    df = pd.DataFrame(matrix, columns=column_space, index=[
-                      b.workload.name for b in flatten])
-
-    width = self.width
-    df.plot(kind=&#34;bar&#34;, stacked=True, width=width, ax=ax)
-
-    h, _ = ax.get_legend_handles_labels()
-    x_ticks = []
-    children = h[0].get_children()
-    x_tick_at = children[0].get_x()
-    x_tick_at_last = children[-1].get_x() + width
-    distance = x_tick_at_last - x_tick_at
-    inter_bar = 0.01
-    inter_space = (distance - ((width + inter_bar) *
-                               len(flatten))) / (len(self.workloads) + 1)
-    # For some reason the first bar starts at a negative X co-ordinate, so dont really
-    # know how the coordinate system in matplot lib currently works and docs say otherwise.  So
-    # for now just adding to adjust for this
-    x_tick_at = inter_space + x_tick_at
-
-    for group in self.workloads:
-        x_ticks.append(x_tick_at)
-        for wl in group[1:]:
-            x_ticks.append(x_tick_at + width + inter_bar)
-            x_tick_at += width + inter_bar
-        x_tick_at += width + inter_space
-
-    if (x_ticks[-1] + width / 2) &gt; x_tick_at_last:
-        self.print(&#34;Width param is too large, please reduce&#34;)
-        return
-
-    for x in range(0, len(column_space)):
-        for i, child in enumerate(h[x].get_children()):
-            child.set_x(x_ticks[i])
-    ax.set_xticks([x + (width / 2) for x in x_ticks])
-    ax.set_xticklabels([b.label for b in flatten])</code></pre>
-</details>
-</dd>
-<dt id="progbg.graphing.BarGraph.print"><code class="name flex">
-<span>def <span class="ident">print</span></span>(<span>self, strn: str, silent) ‑> NoneType</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Pretty printer for BarGraph</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def print(self, strn: str, silent) -&gt; None:
-    &#34;&#34;&#34;Pretty printer for BarGraph&#34;&#34;&#34;
-    if silent:
-        return
-
-    print(&#34;\033[1;34m[{}]:\033[0m {}&#34;.format(self.out, strn))</code></pre>
-</details>
-</dd>
-</dl>
 </dd>
 <dt id="progbg.graphing.CustomGraph"><code class="flex name class">
 <span>class <span class="ident">CustomGraph</span></span>
@@ -928,31 +800,12 @@ out (Path): Output file for this single graph to be saved to</p></div>
             self.restrict = dict()
         self.out = out
 
-    def graph(self, ax, silent=False):
+    def _graph(self, ax, silent=False):
         self.aggregation = dict()
-        for work, benchmark in retrieve_relavent_data(self.workloads, self.restrict).items():
+        for work, benchmark in _retrieve_relavent_data(self.workloads, self.restrict).items():
             self.aggregation[work] = aggregate_bench(benchmark, self.filter)
         self.graph_func(ax, self.aggregation)</code></pre>
 </details>
-<h3>Methods</h3>
-<dl>
-<dt id="progbg.graphing.CustomGraph.graph"><code class="name flex">
-<span>def <span class="ident">graph</span></span>(<span>self, ax, silent=False)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def graph(self, ax, silent=False):
-    self.aggregation = dict()
-    for work, benchmark in retrieve_relavent_data(self.workloads, self.restrict).items():
-        self.aggregation[work] = aggregate_bench(benchmark, self.filter)
-    self.graph_func(ax, self.aggregation)</code></pre>
-</details>
-</dd>
-</dl>
 </dd>
 <dt id="progbg.graphing.Histogram"><code class="flex name class">
 <span>class <span class="ident">Histogram</span></span>
@@ -984,9 +837,9 @@ out (Path): Output file for this single graph to be saved to</p></div>
         self.formatter = formatter
         self.out = out
 
-    def graph(self, ax, silent=False):
-        self.print(&#34;Graphing&#34;, silent)
-        benchmarks = retrieve_relavent_data([self.workload], [])[self.workload]
+    def _graph(self, ax, silent=False):
+        self._print(&#34;Graphing&#34;, silent)
+        benchmarks = _retrieve_relavent_data([self.workload], [])[self.workload]
         aggregate = aggregate_list(benchmarks, self.filter_func)
 
         default_kwargs = {
@@ -1001,60 +854,13 @@ out (Path): Output file for this single graph to be saved to</p></div>
 
         ax.hist(aggregate[self.label], **default_kwargs)
 
-    def print(self, strn: str, silent) -&gt; None:
+    def _print(self, strn: str, silent) -&gt; None:
         &#34;&#34;&#34;Pretty printer for LineGraph&#34;&#34;&#34;
         if silent:
             return
 
         print(&#34;\033[1;34m[{}]:\033[0m {}&#34;.format(self.out, strn))</code></pre>
 </details>
-<h3>Methods</h3>
-<dl>
-<dt id="progbg.graphing.Histogram.graph"><code class="name flex">
-<span>def <span class="ident">graph</span></span>(<span>self, ax, silent=False)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def graph(self, ax, silent=False):
-    self.print(&#34;Graphing&#34;, silent)
-    benchmarks = retrieve_relavent_data([self.workload], [])[self.workload]
-    aggregate = aggregate_list(benchmarks, self.filter_func)
-
-    default_kwargs = {
-        &#39;edgecolor&#39;: &#39;black&#39;,
-        &#34;density&#34;: True,
-        &#34;bins&#34;: 10,
-        &#34;color&#34;: &#34;lightgrey&#34;
-    }
-
-    if (self.kwargs):
-        default_kwargs.update(self.kwargs)
-
-    ax.hist(aggregate[self.label], **default_kwargs)</code></pre>
-</details>
-</dd>
-<dt id="progbg.graphing.Histogram.print"><code class="name flex">
-<span>def <span class="ident">print</span></span>(<span>self, strn: str, silent) ‑> NoneType</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Pretty printer for LineGraph</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def print(self, strn: str, silent) -&gt; None:
-    &#34;&#34;&#34;Pretty printer for LineGraph&#34;&#34;&#34;
-    if silent:
-        return
-
-    print(&#34;\033[1;34m[{}]:\033[0m {}&#34;.format(self.out, strn))</code></pre>
-</details>
-</dd>
-</dl>
 </dd>
 <dt id="progbg.graphing.LineGraph"><code class="flex name class">
 <span>class <span class="ident">LineGraph</span></span>
@@ -1062,15 +868,19 @@ out (Path): Output file for this single graph to be saved to</p></div>
 </code></dt>
 <dd>
 <div class="desc"><p>progbg Line Graph</p>
-<h2 id="arguments">Arguments</h2>
-<p>x: attribute you wish to plot its change
-y: attribute you wish to see respond to the change in x
-workloads: Workloads that the line graph will use in the WRK:BCK1/BCK2 format
-formatter: Optional formatter to be used on the graph once the graph is complete
-out: Optional name for file the user wishes to save the graph too.
-We automatically always produce
-a .svg file.
-Current supported extensions are: .svg, .pgf, .png.</p></div>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>x</code></strong> :&ensp;<code>str</code></dt>
+<dd>attribute you wish to plot its change</dd>
+<dt><strong><code>y</code></strong> :&ensp;<code>str</code></dt>
+<dd>attribute you wish to see respond to the change in x</dd>
+<dt><strong><code>workloads</code></strong> :&ensp;<code>List</code></dt>
+<dd>Workloads that the line graph will use in the WRK:BCK1/BCK2 format</dd>
+<dt><strong><code>formatter</code></strong> :&ensp;<code>Function</code>, optional</dt>
+<dd>Formatter to be used on the graph once the graph is complete</dd>
+<dt><strong><code>out</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>Optional name for file the user wishes to save the graph too.</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1078,13 +888,12 @@ Current supported extensions are: .svg, .pgf, .png.</p></div>
 <pre><code class="python">class LineGraph:
     &#34;&#34;&#34;progbg Line Graph
 
-    Arguments:
-        x: attribute you wish to plot its change
-        y: attribute you wish to see respond to the change in x
-        workloads: Workloads that the line graph will use in the WRK:BCK1/BCK2 format
-        formatter: Optional formatter to be used on the graph once the graph is complete
-        out: Optional name for file the user wishes to save the graph too.  We automatically always produce
-        a .svg file.  Current supported extensions are: .svg, .pgf, .png. 
+    Args:
+        x (str): attribute you wish to plot its change
+        y (str): attribute you wish to see respond to the change in x
+        workloads (List): Workloads that the line graph will use in the WRK:BCK1/BCK2 format
+        formatter (Function, optional): Formatter to be used on the graph once the graph is complete
+        out (str, optional): Optional name for file the user wishes to save the graph too.
     &#34;&#34;&#34;
 
     def __init__(
@@ -1096,9 +905,6 @@ Current supported extensions are: .svg, .pgf, .png.</p></div>
             formatter: Dict = None,
             out: str = None):
 
-        check_workloads_and_restrictions(workloads, restrict, [x, y])
-        check_formatter(formatter)
-
         self.formatter = None
         self.x_name = x
         self.y_name = y
@@ -1107,21 +913,21 @@ Current supported extensions are: .svg, .pgf, .png.</p></div>
         self.restrict = restrict
         self.aggregation = None
 
-    def print(self, strn: str, silent) -&gt; None:
+    def _print(self, strn: str, silent) -&gt; None:
         &#34;&#34;&#34;Pretty printer for LineGraph&#34;&#34;&#34;
         if silent:
             return
 
         print(&#34;\033[1;34m[{}]:\033[0m {}&#34;.format(self.out, strn))
 
-    def graph(self, ax, silent=False):
+    def _graph(self, ax, silent=False):
         &#34;&#34;&#34; Create the line graph
         Arguments:
             ax: Axes object to attach data too
         &#34;&#34;&#34;
-        self.print(&#34;Graphing&#34;, silent)
+        self._print(&#34;Graphing&#34;, silent)
         self.aggregation = dict()
-        for work, benchmark in retrieve_relavent_data(self.workloads, self.restrict).items():
+        for work, benchmark in _retrieve_relavent_data(self.workloads, self.restrict).items():
             check_one_varying(benchmark, extras=[self.x_name])
             x, y, ystd, self.aggregation[work] = retrieve_axes(
                 benchmark, self.x_name, self.y_name)
@@ -1131,55 +937,6 @@ Current supported extensions are: .svg, .pgf, .png.</p></div>
 
         ax.legend()</code></pre>
 </details>
-<h3>Methods</h3>
-<dl>
-<dt id="progbg.graphing.LineGraph.graph"><code class="name flex">
-<span>def <span class="ident">graph</span></span>(<span>self, ax, silent=False)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Create the line graph</p>
-<h2 id="arguments">Arguments</h2>
-<p>ax: Axes object to attach data too</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def graph(self, ax, silent=False):
-    &#34;&#34;&#34; Create the line graph
-    Arguments:
-        ax: Axes object to attach data too
-    &#34;&#34;&#34;
-    self.print(&#34;Graphing&#34;, silent)
-    self.aggregation = dict()
-    for work, benchmark in retrieve_relavent_data(self.workloads, self.restrict).items():
-        check_one_varying(benchmark, extras=[self.x_name])
-        x, y, ystd, self.aggregation[work] = retrieve_axes(
-            benchmark, self.x_name, self.y_name)
-        vals = sorted(list(zip(x, y)), key=lambda x: x[0])
-        x, y = zip(*vals)
-        ax.plot(x, y, linestyle=&#39;-&#39;, linewidth=1, label=work)
-
-    ax.legend()</code></pre>
-</details>
-</dd>
-<dt id="progbg.graphing.LineGraph.print"><code class="name flex">
-<span>def <span class="ident">print</span></span>(<span>self, strn: str, silent) ‑> NoneType</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Pretty printer for LineGraph</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def print(self, strn: str, silent) -&gt; None:
-    &#34;&#34;&#34;Pretty printer for LineGraph&#34;&#34;&#34;
-    if silent:
-        return
-
-    print(&#34;\033[1;34m[{}]:\033[0m {}&#34;.format(self.out, strn))</code></pre>
-</details>
-</dd>
-</dl>
 </dd>
 </dl>
 </section>
@@ -1197,10 +954,7 @@ Current supported extensions are: .svg, .pgf, .png.</p></div>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
-<li><code><a title="progbg.graphing.calculate_ticks" href="#progbg.graphing.calculate_ticks">calculate_ticks</a></code></li>
-<li><code><a title="progbg.graphing.check_workloads_and_restrictions" href="#progbg.graphing.check_workloads_and_restrictions">check_workloads_and_restrictions</a></code></li>
 <li><code><a title="progbg.graphing.filter" href="#progbg.graphing.filter">filter</a></code></li>
-<li><code><a title="progbg.graphing.retrieve_relavent_data" href="#progbg.graphing.retrieve_relavent_data">retrieve_relavent_data</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>
@@ -1213,30 +967,15 @@ Current supported extensions are: .svg, .pgf, .png.</p></div>
 </li>
 <li>
 <h4><code><a title="progbg.graphing.BarGraph" href="#progbg.graphing.BarGraph">BarGraph</a></code></h4>
-<ul class="">
-<li><code><a title="progbg.graphing.BarGraph.graph" href="#progbg.graphing.BarGraph.graph">graph</a></code></li>
-<li><code><a title="progbg.graphing.BarGraph.print" href="#progbg.graphing.BarGraph.print">print</a></code></li>
-</ul>
 </li>
 <li>
 <h4><code><a title="progbg.graphing.CustomGraph" href="#progbg.graphing.CustomGraph">CustomGraph</a></code></h4>
-<ul class="">
-<li><code><a title="progbg.graphing.CustomGraph.graph" href="#progbg.graphing.CustomGraph.graph">graph</a></code></li>
-</ul>
 </li>
 <li>
 <h4><code><a title="progbg.graphing.Histogram" href="#progbg.graphing.Histogram">Histogram</a></code></h4>
-<ul class="">
-<li><code><a title="progbg.graphing.Histogram.graph" href="#progbg.graphing.Histogram.graph">graph</a></code></li>
-<li><code><a title="progbg.graphing.Histogram.print" href="#progbg.graphing.Histogram.print">print</a></code></li>
-</ul>
 </li>
 <li>
 <h4><code><a title="progbg.graphing.LineGraph" href="#progbg.graphing.LineGraph">LineGraph</a></code></h4>
-<ul class="">
-<li><code><a title="progbg.graphing.LineGraph.graph" href="#progbg.graphing.LineGraph.graph">graph</a></code></li>
-<li><code><a title="progbg.graphing.LineGraph.print" href="#progbg.graphing.LineGraph.print">print</a></code></li>
-</ul>
 </li>
 </ul>
 </li>

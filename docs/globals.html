@@ -43,8 +43,6 @@ by the user
 
 GRAPHS_DIR = &#34;graphs&#34;
 &#34;&#34;&#34;str: default graphs directory&#34;&#34;&#34;
-PROGBG_EXTENSION = &#34;.progbg&#34;
-&#34;&#34;&#34;str: Extension used for file already parsed by parsers&#34;&#34;&#34;
 
 
 # String versions of the dictionaries
@@ -57,8 +55,8 @@ _EDIT_GLOBAL_TABLE = {
 }
 &#34;&#34;&#34;Globals Table
 
-Table to allow us to quickly access applicable global variables within
-the globals() table
+Table to allow us to quickly access applicable global variables that need to be edited
+within the globals() table. This is utilized within import_plan.
 &#34;&#34;&#34;
 
 _sb_rnames = [&#34;_backend&#34;, &#34;_execution_name&#34;, &#34;_iter&#34;, &#34;_workload&#34;]</code></pre>
@@ -72,10 +70,6 @@ _sb_rnames = [&#34;_backend&#34;, &#34;_execution_name&#34;, &#34;_iter&#34;, &#
 <dt id="progbg.globals.GRAPHS_DIR"><code class="name">var <span class="ident">GRAPHS_DIR</span></code></dt>
 <dd>
 <div class="desc"><p>str: default graphs directory</p></div>
-</dd>
-<dt id="progbg.globals.PROGBG_EXTENSION"><code class="name">var <span class="ident">PROGBG_EXTENSION</span></code></dt>
-<dd>
-<div class="desc"><p>str: Extension used for file already parsed by parsers</p></div>
 </dd>
 </dl>
 </section>
@@ -98,7 +92,6 @@ _sb_rnames = [&#34;_backend&#34;, &#34;_execution_name&#34;, &#34;_iter&#34;, &#
 <li><h3><a href="#header-variables">Global variables</a></h3>
 <ul class="">
 <li><code><a title="progbg.globals.GRAPHS_DIR" href="#progbg.globals.GRAPHS_DIR">GRAPHS_DIR</a></code></li>
-<li><code><a title="progbg.globals.PROGBG_EXTENSION" href="#progbg.globals.PROGBG_EXTENSION">PROGBG_EXTENSION</a></code></li>
 </ul>
 </li>
 </ul>

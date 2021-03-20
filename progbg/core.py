@@ -12,34 +12,54 @@ import sys
 import importlib
 import inspect
 import sqlite3
-import shutil
 
 import types
 import subprocess
 from typing import List, Dict
 from pprint import pformat
-from pprint import pprint
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from .format import format_fig, check_formatter
-from .util import Backend, Variables, dump_obj, error
-from .util import silence_print, restore_print
+from .util import Backend, Variables, error
 
 from .globals import _sb_registered_benchmarks, _sb_registered_backend
 from .globals import _sb_executions, _sb_graphs, _sb_rnames
 from .globals import _sb_figures, GRAPHS_DIR
 from .globals import _EDIT_GLOBAL_TABLE
 
+__pdoc__ = {}
 
 class Metrics:
+    """Metrics collection object
+
+    This object is given to executions to allow for users to specify what data
+    must be kept. The main functio that should be used by users is the add_metric
+    function, which simply appends data points to a list to be used to calculate
+    means and standard deviation later
+    """
     def __init__(self):
         self._vars = dict()
         self._consts = dict()
 
     def add_metric(self, key, val):
+        """Add a data point to a metric key
+
+        Args:
+            key (str): Key to add value to
+            val (int, float): value to append to a list
+
+        Example:
+            Suppose we have a parser we wish to use. This parser takes
+            both a metrics object and a file path.
+
+            >>> def my_parser(metrics: Metrics, out: str):
+            >>>     with open(out, 'r') as f:
+            >>>         mydata = f.read()
+            >>>         val = find_specific_value(mydata)
+            >>>         metrics.add_metric('my-stored-val', val)
+        """
         if key not in self._vars:
             self._vars[key] = [val]
         else:
@@ -52,9 +72,15 @@ class Metrics:
         return self._consts[key]
 
     def add_constant(self, key, val):
+        """Add a constant to a metric object
+
+        Args:
+            key (str): Key for constant
+            val (obj): Value of this constant
+        """
         self._consts[key] = val
 
-    def combinate(self, other: Dict):
+    def _combine(self, other: Dict):
         for key, val in other._vars.items():
             if key in self._vars:
                 self._vars[key].append(val)
@@ -62,6 +88,20 @@ class Metrics:
                 self._vars[key] = val
 
     def get_stats(self):
+        """Returns the metrics object
+
+        Will return the current metrics of this object. Each associated
+        key will have its mean and standard deviation calculated.  Standard deviation
+        is stored within a "_std" key.
+
+        For example. If I had some metrics with associated key "my-metric". The returned
+        dictionary would store the mean at key "my-metrics", and store standard deviation
+        at key "my-metrics_std".  This allows users to also manually set standard deviation
+        of objects if needed. For example when using then `plan_parse` style executions.
+
+        Returns:
+            dict
+        """
         obj = dict()
         for key, val in self._vars.items():
             obj[key] = np.mean(val)
@@ -96,19 +136,6 @@ def _retrieve_named_benchmarks(name):
 
 def _retrieve_backends(back_obj):
     return [_sb_registered_backend[back] for back in back_obj.backends]
-
-
-def check_file_backend(file_name):
-    """Checks what the backend of a given filename is
-    Files are orgnized into WORKLOAD_backend_BACKEND_...
-    For workloads that don't used a backend the _backend is
-    not there
-    """
-    chunks = file_name.split('_')
-    if chunks[1] != '_backend':
-        return None
-
-    return chunks[2]
 
 
 def registerbenchmark_sh(name: str, file_path: str):
@@ -181,7 +208,7 @@ class NullBackend:
     @staticmethod
     def uninit():
         pass
-
+__pdoc__["NullBackend"] = False
 
 class Execution:
     """Execution class, see plan_execution documentation"""
@@ -417,11 +444,12 @@ class Execution:
             title += "{}".format(back.name)
         title += ")"
         return "{}".format(title)
-
+__pdoc__["Execution"] = False
 
 class NoBenchmark:
     def __init__(self, parser):
         self.parser = parser
+__pdoc__["NoBenchmark"] = False
 
 
 class ParseExecution:
@@ -465,15 +493,55 @@ class ParseExecution:
 
     def clean(self):
         pass
+__pdoc__["ParseExecution"] = False
 
 
-def plan_parse(file, parse_file_func, out_dir: str = None):
+def plan_parse(file: str, parse_file_func, out_dir: str = None):
+    """Plan a parsing Execution
+
+    Sometimes its not required to have progbg run actual benchmarks, and you may
+    wish to compare to other frameworks which have auto runners. The plan_parse
+    function allows for the ability to capture data output from a text file and
+    integrate it into graphs.
+
+    Args:
+        file (str): File to be parsed and sent to the parse_file_func argument
+        parse_file_func (Function): Function to parse the data of the file argument
+        out_dir (str, optional): Directory to place parsed data
+
+    Returns:
+        Execution object
+
+    Example:
+        >>> def my_text_parser(metrics: Metrics, out_file: str):
+        >>>     ...
+        >>> exec = plan_parse("my_data.txt", my_text_parser)
+    """
     _sb_executions.append(ParseExecution(file, out_dir, parse_file_func))
     return _sb_executions[-1]
 
 
 def compose_backends(*backends):
+    """Composes registered backend classes into anonymous class
 
+    This function is used to compose one or more backends into an anonymous class
+    which can be used when defining executions in `plan_execution`.
+
+    Args:
+        *backends (class): Class objects to compose together
+
+    Examples:
+        >>> 
+        >>> @registerbackend     
+        >>> class Backend1
+        >>>     ...
+        >>> 
+        >>> @registerbackend
+        >>> class Backend2
+        >>>     ...
+        >>> 
+        >>> composition = compose_backends(Backend1, Backend2)
+    """
     def construct(self, consts={}, vars=[]):
         self.variables = Variables(consts, vars)
         self.name = "-".join([b.__name__ for b in backends])
@@ -496,7 +564,7 @@ def compose_backends(*backends):
 
 
 def plan_execution(runner,
-                   backends: Dict = None,
+                   backends: List = None,
                    parser=None,
                    out: str = None) -> None:
     """Plan an execution
@@ -504,15 +572,55 @@ def plan_execution(runner,
     Definition of an execution of a workload/benchmark and backends you wish to run the workload
     on.
 
-    Arguments:
-        name: Name of the execution, to be used by graph objects to plot data
-        run: Running object (DefBenchmark, or Command line benchmark)
-        backend: Backends are a dictionary object that tie a backend you wish to run
-        (this must be a lowercase name of a registered backend) to a Variables
-        object.  This Variables objects holds how you want the backend to change
-        for an execution.  See Variables documentation for more info
-        parse: A parse object that defines how to take output from a workload,
-        and retrieve data.
+    Args:
+        runner (Benchmark): Constructed Benchmark object
+        backends (List): List of Constructed backends to run on    
+        parser (Function): Parsing function which takes a metrics, and out_file as args.
+        out (str): Directory in which to place parsed output.
+
+    Returns:
+        Execution object
+
+    Examples:
+        
+        >>> @registerbenchmark
+        >>> class benchmark:
+        >>>     def run(x = 10):
+        >>>         ...
+        >>> 
+        >>> @registerbackend:
+        >>> class myback:
+        >>>     ...
+        >>> 
+        >>> def my_parser(metrics: Metrics, out_file: str):
+        >>>     ...
+        >>> 
+        >>> execution = plan_execution(
+        >>>                 benchmark({}, [("x", range(0, 10))]),
+        >>>                 out = "out",
+        >>>                 backends = [myback()],
+        >>>                 parser = my_parser
+        >>>             )
+
+        Basic example, notice that when binding arguments to a workload (through construction). In the
+        above example:
+        >>> benchmark({}, [("x", range(0, 10))])
+
+        You bind variables to the named arguments of the run function (or init function for backends).
+        In this example is the `x` variable, which we have chosen to vary from 0 to 10. If for example
+        we wished for `x` to remain constant we would place it within the first argument of the
+        constructor. Like so:
+
+        >>> execution = plan_execution(
+        >>>                 benchmark(dict(
+        >>>                     x = 5
+        >>>                 ), []),
+        >>>                 out = "out",
+        >>>                 backends = [myback()],
+        >>>                 parser = my_parser
+        >>>             )
+
+
     """
 
     # We have to fix up the variables, we do this so the user doesnt
@@ -522,19 +630,39 @@ def plan_execution(runner,
     return _sb_executions[-1]
 
 
-def plan_graph(name: str, graphobj):
+def plan_graph(title: str, graphobj):
     """Plan a graph object
     Takes a graph object (LineGraph, etc) and ties the a name to it to be
     used by figures
 
-    Argument:
-        name: Name of the graph object - must be unique among all graphs
-        graphobj: Graph object to tie to the name
-    """
-    if name in _sb_graphs:
-        error("Graph already defined: {}".format(name))
+    Args:
+        title (str): Title of the graph object
+        graphobj (obj): Specified graph to use
 
-    _sb_graphs[name] = graphobj
+
+    Example:
+        >>> exec1 = plan_execution(...)
+        >>> exec2 = plan_execution(...)
+        >>> bf = BarFactory(exec1)
+        >>> bf_two = BarFactory(exec2)
+        >>> graph = plan_graph(
+        >>>             "My Custom Graph",
+        >>>             BarGraph(
+        >>>                 [
+        >>>                     [bf("data-one"), bf_two("data-one")],
+        >>>                     [bf("data-two"), bf_two("data-two")],
+        >>>                 ],
+        >>>             ... 
+        >>> )
+
+        Above is an example of using plan graph.  Arguments are mostly dependent on each implementation
+        of the Graph. See `graphing.BarGraph`, `graphing.LineGraph`, 
+        `graphing.CustomGraph`, `graphing.Histogram` etc.
+    """
+    if title in _sb_graphs:
+        error("Graph already defined: {}".format(title))
+
+    _sb_graphs[title] = graphobj
 
 
 def _is_static(func):
@@ -562,9 +690,13 @@ def _check_names(cls, func, is_run=False):
 
 
 def registerbenchmark(cls):
-    """Register for benchmark
+    """Register a benchmark with ProgBG
 
-    cls: Class definition to wrap and register
+    Args:
+        cls (class): Class to wrap and register
+
+    Returns:
+        Wrapped class object
     """
     if not hasattr(cls, "run"):
         error("Benchmark requires the run function: {}".format(cls.__name__))
@@ -586,7 +718,7 @@ def registerbenchmark(cls):
     return cls
 
 
-def get_args(spec, **kwargs):
+def _get_args(spec, **kwargs):
     args = dict()
     for i, k in enumerate(spec.args):
         if k in kwargs:
@@ -595,10 +727,13 @@ def get_args(spec, **kwargs):
 
 
 def registerbackend(cls):
-    """Regististration of a backend class
+    """Register a class with ProgBG
 
-    Argument:
-    cls: Class definition to wrap and register
+    Args:
+    cls (class): Class object to wrap and register
+
+    Returns:
+        Wrapped class object
     """
     if not hasattr(cls, "start"):
         error("Backend requires the init function: {}".format(cls.__name__))
@@ -617,7 +752,7 @@ def registerbackend(cls):
     old = cls.start
 
     def wrapped_start(**kwargs):
-        args = get_args(spec, **kwargs)
+        args = _get_args(spec, **kwargs)
         return old(**args)
 
     cls.__init__ = construct
@@ -663,7 +798,20 @@ def import_plan(filepath: str, mod_globals):
     # Fix globals in our namespace
     for name in _EDIT_GLOBAL_TABLE:
         mod_globals[name] = getattr(getattr(plan_mod, imported_name), name)
+__pdoc__["import_plan"] = False
 
+
+def default_formatter(fig, axes):
+    """ Default formatter placeholder
+
+    Override this to apply a default format function to all graphs and figures
+    """
+
+def _format_fig(fig, axes, formatter):
+    if not formatter:
+        formatter = default_formatter
+
+    formatter(fig, axes)
 
 class Figure:
     """Create figure given a set of graphs, for more information see plan_figure documentation"""
@@ -698,54 +846,58 @@ class Figure:
                 except Exception as err:
                     error("Problem with graph {}: {}".format(self.name, err))
 
-        format_fig(fig, axes, self.formatter)
+        _format_fig(fig, axes, self.formatter)
 
         out = os.path.join(GRAPHS_DIR, self.out)
         plt.savefig(out, bbox_inches="tight", pad_inches=0)
         if not out.endswith(".svg"):
             out = ".".join(out.split(".")[:-1]) + ".svg"
             plt.savefig(out, bbox_inches="tight", pad_inches=0)
+__pdoc__["Figure"] = False
 
-
-def plan_figure(name: str, graph_layout: List[List[str]], formatter, out: str):
+def plan_figure(title: str, graph_layout: List[List[str]], formatter, out: str):
     """Plan a figure given a set of graphs
     Arguments:
-        name: Unique name for the figure (unique among figures)
-        graph_layout: An m x n matrix that defines how you want you
-        figure to hold graph objects
-        formatter: Formatter object that tells you how to format the
-        object this can be either a Dict or a function that takes the figure,
-        and axes as an argument (as defined by matplotlib)
-        out: output name for the figure.
+        title (str): Title of the figure
+        graph_layout (List[List]): An M by N matrix that defines figure layout.
+        formatter (Function): Function for custom formatting.
+        out (str): output name for the figure.
     Examples:
-            sb.plan_figure("fig-1",
-                    [["graph-1"],
-                    ["graph-2"]],
-                    {
-                        "height": 6,
-                        "width": 3,
-                    },
-                    out  = "samplefig.svg"
-            )
+        >>> graph1 = plan_graph(...)
+        >>> graph2 = plan_graph(...)
+        >>> graph3 = plan_graph(...)
+        >>> graph4 = plan_graph(...)
+        >>> 
+        >>> def myformatter(fig, axes):
+        >>>     # Axes here will be a list over a single object in the same layout
+        >>>     # as the provided graph_layout argument.
+        >>>     ...
+        >>> 
+        >>> plan_figure("My Custom Graph",
+        >>>             [[graph1, graph2], [graph3, graph4]],
+        >>>             formatter = myformatter,
+        >>>             out = "myfigure.svg"
+        >>> )
 
-            We See here this will create a 1 by 2 matrix where the first row will contain graph-1
-            and the second will contain graph 2
+        The above example will create a figure that is layed out like the following:
 
-            The figure will be modified to have a figure height of 6, and width of 3 and saved to
-            sampelefig.svg
+         Graph1  Graph2 
+
+         Graph3  Graph4 
+
     """
     if name in _sb_figures:
         error("Figure already defined: {}".format(name))
 
-    _sb_figures[name] = Figure(name, graph_layout, formatter, out)
+    _sb_figures[title] = Figure(title, graph_layout, formatter, out)
 
 
 def execute_plan(plan: str, args):
     """Entry point to start executing progbg
-    Argument:
-        plan: Path to plan .py file
-        no_exec: When true, will not execute any planned execution but rather will only
-        take re-parse and re-make graphs
+
+    Args:
+        plan (str): Path to plan .py file
+        args (Namespace): Namespace of arguments (no_exec (bool))
     """
     import_plan(plan, globals())
 
@@ -769,8 +921,8 @@ def execute_plan(plan: str, args):
         if len(graph.out):
             fig, axes = plt.subplots()
             fig.set_size_inches(3.25, 3.25)
-            graph.graph(axes)
-            format_fig(fig, axes, graph.formatter)
+            graph._graph(axes)
+            _format_fig(fig, axes, graph.formatter)
             for curout in graph.out:
                 out = os.path.join(GRAPHS_DIR, curout)
                 try:
