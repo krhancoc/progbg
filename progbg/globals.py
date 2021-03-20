@@ -14,8 +14,6 @@ by the user
 
 GRAPHS_DIR = "graphs"
 """str: default graphs directory"""
-PROGBG_EXTENSION = ".progbg"
-"""str: Extension used for file already parsed by parsers"""
 
 
 # String versions of the dictionaries
@@ -28,8 +26,8 @@ _EDIT_GLOBAL_TABLE = {
 }
 """Globals Table
 
-Table to allow us to quickly access applicable global variables within
-the globals() table
+Table to allow us to quickly access applicable global variables that need to be edited
+within the globals() table. This is utilized within import_plan.
 """
 
 _sb_rnames = ["_backend", "_execution_name", "_iter", "_workload"]

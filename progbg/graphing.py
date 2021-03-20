@@ -2,7 +2,7 @@
 """
 Graphing Module
 
-Holds all related code around the different graphs the progbg supports
+This module handles the various graph classes that progbg supports
 """
 from typing import List, Dict
 from pprint import pformat
@@ -17,7 +17,6 @@ import numpy as np
 from .globals import _sb_executions
 from .subr import retrieve_axes, check_one_varying
 from .subr import aggregate_bench, aggregate_list
-from .format import check_formatter
 from .util import Backend, retrieve_obj, error
 
 mpl.use("pgf")
@@ -55,42 +54,6 @@ pgf_with_pdflatex = {
 
 mpl.rcParams.update(pgf_with_pdflatex)
 
-
-def reformat_large(tick_val):
-    if tick_val >= 1000000000:
-        val = round(tick_val / 1000000000, 1)
-        new_tick_format = '{:}B'.format(val)
-    elif tick_val >= 1000000:
-        val = round(tick_val / 1000000, 1)
-        new_tick_format = '{:}M'.format(val)
-    elif tick_val >= 1000:
-        val = round(tick_val / 1000, 1)
-        new_tick_format = '{:}K'.format(val)
-    else:
-        new_tick_format = tick_val
-
-    new_tick_format = str(new_tick_format)
-
-    index_of_decimal = new_tick_format.find(".")
-    if index_of_decimal != -1:
-        value_after_decimal = new_tick_format[index_of_decimal + 1]
-        if value_after_decimal == "0":
-            new_tick_format = new_tick_format[0:index_of_decimal] + \
-                new_tick_format[index_of_decimal + 2:]
-
-    return new_tick_format
-
-
-def normalize(group_list, index_to):
-    normal = group_list[index_to]
-    final_list = []
-    for group in group_list:
-        stddev = group[1] / group[0]
-        newval = group[0] / normal[0]
-        final_list.append((newval, stddev * newval))
-    return final_list
-
-
 def _is_good(benchmark, restriction):
     for key, val in restriction.items():
         if key not in benchmark:
@@ -99,41 +62,6 @@ def _is_good(benchmark, restriction):
             return False
 
     return True
-
-
-def check_workloads_and_restrictions(workloads, restrict, params):
-    """
-    Checks workload, given the restriction and parameters given
-    is correct
-    """
-    for workload_path in workloads:
-        path = workload_path.split(":")
-        workload = path[0]
-        if workload not in _sb_executions:
-            error("Undefined workload in for graph: {}".format(workload))
-        for param in params:
-            if not _sb_executions[workload].param_exists(param):
-                error("Workload {} has {} undefined".format(
-                    workload, param))
-
-        if len(path) == 2:
-            if not _sb_executions[workload].backends:
-                error("Workload does not define a backend to run on: {}"
-                      .format(workload_path))
-
-            if path[1] not in _sb_executions[workload].backends:
-                error("Graph wishes to graph non-existent backend in workload: {}"
-                      .format(path[1]))
-
-        if len(path) > 2:
-            error("Undefined workload/backend pair: {}".format(workload_path))
-
-    for key in restrict.keys():
-        output = any([_sb_executions[work.split(":")[0]].param_exists(key)
-                      for work in workloads])
-        if not output:
-            print(output)
-            error("Unrecognized key for retrict constraint: {}".format(key))
 
 
 def _retrieve_data_files(execution, restriction):
@@ -199,7 +127,7 @@ def _retrieve_data_db(execution, restriction):
     return benchmarks
 
 
-def retrieve_relavent_data(workloads: str, restriction: Dict):
+def _retrieve_relavent_data(workloads: str, restriction: Dict):
     """
     Grab the workloads string, and retrictions and filter out the data within the specified out
     backend, this can either be a file or an sqllite3 db.
@@ -222,7 +150,7 @@ def retrieve_relavent_data(workloads: str, restriction: Dict):
     return final_args
 
 
-def calculate_ticks(group_len: int, width: float):
+def _calculate_ticks(group_len: int, width: float):
     """Given some group size, and width calculate
     where ticks would occur.
 
@@ -241,7 +169,9 @@ def calculate_ticks(group_len: int, width: float):
     return temp
 
 
-def filter(metrics, restrict_dict):
+def filter(metrics: List, restrict_dict: Dict):
+    """Filter a list of metrics given a restriction dict
+    """
     final_metric = []
     for metric in metrics:
         if all(item in metric.get_stats().items() for item in restrict_dict.items()):
@@ -250,12 +180,41 @@ def filter(metrics, restrict_dict):
 
 
 class BarGraph:
-    """progbg Bar Graph"""
+    """Bar Graph
+
+    Args:
+        workloads (List): A list of list of bars.  Each list is a grouping of bars to be graphs.
+        group_labels (List): Labels associated to each grouped list in workloads.
+        formatter (Function, optional): Function object for post customization of graphs.
+        width (float): Width of each bar
+        out (Path): Output file for this single graph to be saved to
+
+    Examples:
+        Suppose we have some previously defined execution called `exec`.
+
+        >>> exec = plan_execution(...)
+        >>> bar1 = Bar(exec, "stat-one", label="Custom Stat")
+        >>> bar2 = Bar(exec, "stat-two", label="Custom Stat Two")
+        >>> plan_graph("Graph Title - Grouped",
+        >>>     BarGraph([[bar1, bar2]],
+        >>>         group_labels=["These a grouped!"],
+        >>>         out="custom.svg"
+        >>>     )
+
+        The above example would create a graph grouping both bar1, and bar2 next to each other. The below example
+        would seperate bar1 and bar2. "stat-one", and "stat-two", are both values that would have been added to the
+        associated `core.Metrics` object which is passed through the parser functions provided by the user.
+
+        >>> plan_graph("Graph Title - Seperate",
+        >>>     BarGraph([[bar1], [bar2]],
+        >>>         group_labels=["Group 1!", "Group 2!"],
+        >>>         out="custom.svg"
+        >>>     )
+    """
 
     def __init__(
             self,
             workloads: List,
-            inner_labels,
             group_labels,
             formatter=None,
             restrict_on=None,
@@ -268,10 +227,12 @@ class BarGraph:
         self.restrict_on = restrict_on
         self.width = width
         self.gl = group_labels
-        self.il = inner_labels
+
+        assert len(self.gl) == len(self.workloads)
+
         self.formatter = formatter
 
-    def graph(self, ax, silent=False):
+    def _graph(self, ax, silent=False):
 
         flatten = [x for sub in self.workloads for x in sub]
         # We create a matrix that is the number of bars wide, and the number
@@ -290,7 +251,7 @@ class BarGraph:
             arr = np.zeros(len(column_space))
             metrics = filter(wl.workload._cached, self.restrict_on)
             if (len(metrics) > 1):
-                self.print(
+                self._print(
                     "Warning: Restriction not fine grained enough, multiple selections are available", silent)
             metrics = metrics[0].get_stats()
             for x in wl.composed:
@@ -325,7 +286,7 @@ class BarGraph:
             x_tick_at += width + inter_space
 
         if (x_ticks[-1] + width / 2) > x_tick_at_last:
-            self.print("Width param is too large, please reduce")
+            self._print("Width param is too large, please reduce")
             return
 
         for x in range(0, len(column_space)):
@@ -334,7 +295,7 @@ class BarGraph:
         ax.set_xticks([x + (width / 2) for x in x_ticks])
         ax.set_xticklabels([b.label for b in flatten])
 
-    def print(self, strn: str, silent) -> None:
+    def _print(self, strn: str, silent) -> None:
         """Pretty printer for BarGraph"""
         if silent:
             return
@@ -343,6 +304,20 @@ class BarGraph:
 
 
 class Bar:
+    """Bar object used within `BarGraph`
+
+    This represent a bar within a bar graph.  Its construction used an execution object.
+    Once an execution is done, metrics objects are pulled and summarized into means and standard
+    deviations.
+
+    The keys within the `core.Metrics` are used to compose bars.  You may select just one.
+    But optionally you may compose bars of many metrics (See matplotlibs stacked bar).
+
+    Args:
+        wl (Execution):  Execution object to use
+        composed_of (List, str): A key for the data to use, or optionally a list of keys
+        label (str): Label of the bar
+    """
     def __init__(self, wl, composed_of, label):
         if isinstance(composed_of, str, ):
             self.composed = [composed_of]
@@ -353,6 +328,10 @@ class Bar:
 
 
 class BarFactory:
+    """Ease of use Factory Class
+
+    Used to quickly be able to make many bars from one Execution object
+    """
     def __init__(self, wl):
         self.workload = wl
 
@@ -382,9 +361,9 @@ class Histogram:
         self.formatter = formatter
         self.out = out
 
-    def graph(self, ax, silent=False):
-        self.print("Graphing", silent)
-        benchmarks = retrieve_relavent_data([self.workload], [])[self.workload]
+    def _graph(self, ax, silent=False):
+        self._print("Graphing", silent)
+        benchmarks = _retrieve_relavent_data([self.workload], [])[self.workload]
         aggregate = aggregate_list(benchmarks, self.filter_func)
 
         default_kwargs = {
@@ -399,7 +378,7 @@ class Histogram:
 
         ax.hist(aggregate[self.label], **default_kwargs)
 
-    def print(self, strn: str, silent) -> None:
+    def _print(self, strn: str, silent) -> None:
         """Pretty printer for LineGraph"""
         if silent:
             return
@@ -427,9 +406,9 @@ class CustomGraph:
             self.restrict = dict()
         self.out = out
 
-    def graph(self, ax, silent=False):
+    def _graph(self, ax, silent=False):
         self.aggregation = dict()
-        for work, benchmark in retrieve_relavent_data(self.workloads, self.restrict).items():
+        for work, benchmark in _retrieve_relavent_data(self.workloads, self.restrict).items():
             self.aggregation[work] = aggregate_bench(benchmark, self.filter)
         self.graph_func(ax, self.aggregation)
 
@@ -437,13 +416,12 @@ class CustomGraph:
 class LineGraph:
     """progbg Line Graph
 
-    Arguments:
-        x: attribute you wish to plot its change
-        y: attribute you wish to see respond to the change in x
-        workloads: Workloads that the line graph will use in the WRK:BCK1/BCK2 format
-        formatter: Optional formatter to be used on the graph once the graph is complete
-        out: Optional name for file the user wishes to save the graph too.  We automatically always produce
-        a .svg file.  Current supported extensions are: .svg, .pgf, .png. 
+    Args:
+        x (str): attribute you wish to plot its change
+        y (str): attribute you wish to see respond to the change in x
+        workloads (List): Workloads that the line graph will use in the WRK:BCK1/BCK2 format
+        formatter (Function, optional): Formatter to be used on the graph once the graph is complete
+        out (str, optional): Optional name for file the user wishes to save the graph too.
     """
 
     def __init__(
@@ -455,9 +433,6 @@ class LineGraph:
             formatter: Dict = None,
             out: str = None):
 
-        check_workloads_and_restrictions(workloads, restrict, [x, y])
-        check_formatter(formatter)
-
         self.formatter = None
         self.x_name = x
         self.y_name = y
@@ -466,21 +441,21 @@ class LineGraph:
         self.restrict = restrict
         self.aggregation = None
 
-    def print(self, strn: str, silent) -> None:
+    def _print(self, strn: str, silent) -> None:
         """Pretty printer for LineGraph"""
         if silent:
             return
 
         print("\033[1;34m[{}]:\033[0m {}".format(self.out, strn))
 
-    def graph(self, ax, silent=False):
+    def _graph(self, ax, silent=False):
         """ Create the line graph
         Arguments:
             ax: Axes object to attach data too
         """
-        self.print("Graphing", silent)
+        self._print("Graphing", silent)
         self.aggregation = dict()
-        for work, benchmark in retrieve_relavent_data(self.workloads, self.restrict).items():
+        for work, benchmark in _retrieve_relavent_data(self.workloads, self.restrict).items():
             check_one_varying(benchmark, extras=[self.x_name])
             x, y, ystd, self.aggregation[work] = retrieve_axes(
                 benchmark, self.x_name, self.y_name)

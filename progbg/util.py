@@ -8,6 +8,41 @@ from typing import List, Dict, Tuple
 
 from .globals import _sb_rnames
 
+def reformat_large(tick_val):
+    if tick_val >= 1000000000:
+        val = round(tick_val / 1000000000, 1)
+        new_tick_format = '{:}B'.format(val)
+    elif tick_val >= 1000000:
+        val = round(tick_val / 1000000, 1)
+        new_tick_format = '{:}M'.format(val)
+    elif tick_val >= 1000:
+        val = round(tick_val / 1000, 1)
+        new_tick_format = '{:}K'.format(val)
+    else:
+        new_tick_format = tick_val
+
+    new_tick_format = str(new_tick_format)
+
+    index_of_decimal = new_tick_format.find(".")
+    if index_of_decimal != -1:
+        value_after_decimal = new_tick_format[index_of_decimal + 1]
+        if value_after_decimal == "0":
+            new_tick_format = new_tick_format[0:index_of_decimal] + \
+                new_tick_format[index_of_decimal + 2:]
+
+    return new_tick_format
+
+
+def normalize(group_list, index_to):
+    normal = group_list[index_to]
+    final_list = []
+    for group in group_list:
+        stddev = group[1] / group[0]
+        newval = group[0] / normal[0]
+        final_list.append((newval, stddev * newval))
+    return final_list
+
+
 
 def silence_print():
     sys.stdout = open(os.devnull, 'w')

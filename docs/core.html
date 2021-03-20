@@ -1,0 +1,1898 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.9.2" />
+<title>progbg.core API documentation</title>
+<meta name="description" content="Core API calls and classes for ProgBG …" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>progbg.core</code></h1>
+</header>
+<section id="section-intro">
+<p>Core API calls and classes for ProgBG</p>
+<p>This module contains all related API calls for creating and managing
+plan.py files. Special global variables are used to keep track
+of registered backends and benchmarks.</p>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python"># pylint: disable-msg=E0611,E0401,C0103,W0703,R0903
+
+&#34;&#34;&#34;Core API calls and classes for ProgBG
+
+This module contains all related API calls for creating and managing
+plan.py files. Special global variables are used to keep track
+of registered backends and benchmarks.
+&#34;&#34;&#34;
+
+import os
+import sys
+import importlib
+import inspect
+import sqlite3
+
+import types
+import subprocess
+from typing import List, Dict
+from pprint import pformat
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+
+from .util import Backend, Variables, error
+
+from .globals import _sb_registered_benchmarks, _sb_registered_backend
+from .globals import _sb_executions, _sb_graphs, _sb_rnames
+from .globals import _sb_figures, GRAPHS_DIR
+from .globals import _EDIT_GLOBAL_TABLE
+
+__pdoc__ = {}
+
+class Metrics:
+    &#34;&#34;&#34;Metrics collection object
+
+    This object is given to executions to allow for users to specify what data
+    must be kept. The main functio that should be used by users is the add_metric
+    function, which simply appends data points to a list to be used to calculate
+    means and standard deviation later
+    &#34;&#34;&#34;
+    def __init__(self):
+        self._vars = dict()
+        self._consts = dict()
+
+    def add_metric(self, key, val):
+        &#34;&#34;&#34;Add a data point to a metric key
+
+        Args:
+            key (str): Key to add value to
+            val (int, float): value to append to a list
+
+        Example:
+            Suppose we have a parser we wish to use. This parser takes
+            both a metrics object and a file path.
+
+            &gt;&gt;&gt; def my_parser(metrics: Metrics, out: str):
+            &gt;&gt;&gt;     with open(out, &#39;r&#39;) as f:
+            &gt;&gt;&gt;         mydata = f.read()
+            &gt;&gt;&gt;         val = find_specific_value(mydata)
+            &gt;&gt;&gt;         metrics.add_metric(&#39;my-stored-val&#39;, val)
+        &#34;&#34;&#34;
+        if key not in self._vars:
+            self._vars[key] = [val]
+        else:
+            self._vars[key].append(val)
+
+    def __getitem__(self, key):
+        if key in self._vars:
+            return self._vars[key]
+
+        return self._consts[key]
+
+    def add_constant(self, key, val):
+        &#34;&#34;&#34;Add a constant to a metric object
+
+        Args:
+            key (str): Key for constant
+            val (obj): Value of this constant
+        &#34;&#34;&#34;
+        self._consts[key] = val
+
+    def _combine(self, other: Dict):
+        for key, val in other._vars.items():
+            if key in self._vars:
+                self._vars[key].append(val)
+            else:
+                self._vars[key] = val
+
+    def get_stats(self):
+        &#34;&#34;&#34;Returns the metrics object
+
+        Will return the current metrics of this object. Each associated
+        key will have its mean and standard deviation calculated.  Standard deviation
+        is stored within a &#34;_std&#34; key.
+
+        For example. If I had some metrics with associated key &#34;my-metric&#34;. The returned
+        dictionary would store the mean at key &#34;my-metrics&#34;, and store standard deviation
+        at key &#34;my-metrics_std&#34;.  This allows users to also manually set standard deviation
+        of objects if needed. For example when using then `plan_parse` style executions.
+
+        Returns:
+            dict
+        &#34;&#34;&#34;
+        obj = dict()
+        for key, val in self._vars.items():
+            obj[key] = np.mean(val)
+            obj[key + &#34;_std&#34;] = np.std(val)
+        for key, val in self._consts.items():
+            obj[key] = val
+
+        return obj
+
+    def __repr__(self):
+        obj = self.get_stats()
+        return pformat(obj)
+
+
+def _retrieve_named_backends(back_obj):
+    named = []
+    for backend in back_obj.backends:
+        cls = _sb_registered_backend[backend]
+        required_init = inspect.getfullargspec(cls.init).args
+        required_uninit = inspect.getfullargspec(cls.uninit).args
+        named.extend(required_init + required_uninit)
+
+    return named
+
+
+def _retrieve_named_benchmarks(name):
+    cls = _sb_registered_benchmarks[name]
+    required_run = inspect.getfullargspec(cls.run).args[2:]
+
+    return required_run
+
+
+def _retrieve_backends(back_obj):
+    return [_sb_registered_backend[back] for back in back_obj.backends]
+
+
+def registerbenchmark_sh(name: str, file_path: str):
+    custom_backend = type(name, (object, ), {})
+
+    @staticmethod
+    def run(backend, out_file):
+        out = open(out_file, &#39;w&#39;)
+        shell = subprocess.Popen(&#34;sh&#34;, stdin=subprocess.PIPE, stdout=out)
+        script = open(file_path, &#34;r&#34;).read()
+        script += &#34;\n&#34;
+        shell.stdin.write(str.encode(script))
+        script = open(file_path, &#34;r&#34;).read()
+        run_str = &#34;run\n&#34;.format(i)
+        shell.stdin.write(str.encode(run_str))
+        shell.stdin.close()
+        shell.wait()
+
+    custom_backend.run = run
+    registerbenchmark(custom_backend)
+
+
+def registerbackend_sh(name: str, file_path: str):
+    custom_backend = type(name, (object, ), {})
+
+    @staticmethod
+    def init():
+        shell = subprocess.Popen(
+            &#34;sh&#34;, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+        script = open(file_path, &#34;r&#34;).read()
+        script += &#34;\n&#34;
+        shell.stdin.write(str.encode(script))
+        shell.stdin.write(str.encode(&#34;init &gt; /dev/null\n&#34;))
+        shell.stdin.write(str.encode(&#34;env\n&#34;))
+        shell.stdin.close()
+        environment = dict()
+        for line in shell.stdout:
+            name, value = line.decode(&#39;ascii&#39;).strip().split(&#39;=&#39;, 1)
+            environment[name] = value
+        uniq = {k: environment[k] for k in set(environment) - set(os.environ)}
+        custom_backend.env = uniq
+        shell.wait()
+
+    custom_backend.init = init
+
+    @staticmethod
+    def uninit():
+        shell = subprocess.Popen(
+            &#34;sh&#34;, stdin=subprocess.PIPE, stdout=subprocess.PIPE, env=custom_backend.env)
+        script = open(file_path, &#34;r&#34;).read()
+        script += &#34;\n&#34;
+        shell.stdin.write(str.encode(script))
+        shell.stdin.write(str.encode(&#34;uninit\n&#34;))
+        shell.stdin.close()
+        shell.wait()
+
+    custom_backend.uninit = uninit
+
+    registerbackend(custom_backend)
+
+
+class NullBackend:
+    def __init__(self, consts={}, var=[]):
+        self.var = Variables(consts, var)
+
+    @staticmethod
+    def init():
+        pass
+
+    @staticmethod
+    def uninit():
+        pass
+__pdoc__[&#34;NullBackend&#34;] = False
+
+class Execution:
+    &#34;&#34;&#34;Execution class, see plan_execution documentation&#34;&#34;&#34;
+
+    def __init__(self, benchmark, backends: List, parser, out: str):
+        self.bench = benchmark
+
+        if backends:
+            self.backends = backends
+        else:
+            self.backends = [NullBackend()]
+
+        self.run_benchmarks = None
+        self.out = out
+        self.parser = parser
+        self._cached = None
+        self.name = &#34;,&#34;.join(
+            [back.name for back in self.backends]) + &#34;-&#34; + self.bench.name
+
+    def print(self, string):
+        &#34;&#34;&#34;Pretty printer for execution&#34;&#34;&#34;
+        print(&#34;\033[1;31m[{} - {}]:\033[0m {}&#34;.format(self.name,
+                                                      self.bench.name, string))
+
+    def tables(self):
+        &#34;&#34;&#34;
+        Generates the tables needed for the sqlite backend
+
+        Table names are in the form EXECNAME__BENCHNAME__BACKENDS
+        Composed backends are seperated by &#34;_b_&#34;.  This is because characters
+        like &#34;/&#34; and &#34;-&#34; and &#34;:&#34; are not accepted by sqlite.
+        &#34;&#34;&#34;
+        tables = {}
+        if self.backends:
+            for back_obj in self.backends:
+                fields_backends = _retrieve_named_backends(back_obj)
+                fields_benchmark = _retrieve_named_benchmarks(self.bench.name)
+                fields_parser = self.bench.parser.fields()
+                tablename = &#34;{}__{}__{}&#34;.format(self.name,
+                                                self.bench.name, back_obj.path_sql)
+                fields = fields_backends + fields_benchmark + fields_parser + _sb_rnames
+                tables[tablename] = sorted(fields)
+        else:
+            fields_benchmark = _retrieve_named_benchmarks(self.bench.name)
+            fields_parser = self.bench.parser.fields()
+            tablename = &#34;{}__{}&#34;.format(self.name,
+                                        self.bench.name)
+            fields = fields_benchmark + fields_parser + _sb_rnames
+            tables[tablename] = sorted(fields)
+
+        return tables
+
+    def _setup_tables(self):
+        conn = sqlite3.connect(self.out)
+        for name, vals in self.tables.items():
+            c = conn.cursor()
+            quotes = [&#39;&#34;{}&#34;&#39;.format(val) for val in vals]
+            exec_str = &#34;CREATE TABLE {} ({});&#34;.format(name, &#34;,&#34;.join(quotes))
+            try:
+                c.execute(exec_str)
+            except sqlite3.OperationalError:
+                exec_str = &#34;DELETE FROM {}&#34;.format(name)
+                c.execute(exec_str)
+            conn.commit()
+            c.close()
+        conn.close()
+
+    # Constantly creating the connection is not so nice.
+    def _add_sql_row(self, obj, bench_args, full_backend_args):
+        conn = sqlite3.connect(self.out)
+        c = conn.cursor()
+        inserted = False
+        for name_full, fields in self.tables.items():
+            name = name_full.split(&#39;__&#39;)
+            if obj[&#34;_execution_name&#34;] != name[0]:
+                continue
+
+            if obj[&#34;_workload&#34;] != name[1]:
+                continue
+
+            if len(name) == 3:
+                sql_friendly = Backend.out_to_sql(obj[&#34;_backend&#34;])
+                if sql_friendly != name[2]:
+                    continue
+
+                obj[&#34;_backend&#34;] = sql_friendly
+
+            vals = []
+            for val in fields:
+                # We have to eliminate the first and last char as they are quotes
+                if val in obj:
+                    # If we do typing for object we would have to do it here?
+                    # When we get the fields we would also ask for typing
+                    # Its a feature that will probably need to be added sooner
+                    # over later
+                    vals.append(&#39;&#34;{}&#34;&#39;.format(str(obj[val])))
+                else:
+                    if full_backend_args and val in full_backend_args:
+                        vals.append(&#39;&#34;{}&#34;&#39;.format(str(full_backend_args[val])))
+                    elif val in bench_args:
+                        vals.append(&#39;&#34;{}&#34;&#39;.format(str(bench_args[val])))
+                    else:
+                        vals.append(&#39;&#34;&#34;&#39;)
+
+            quotes = [&#39;&#34;{}&#34;&#39;.format(val.strip()) for val in fields]
+            exec_str = &#34;INSERT INTO {} ({})\nVALUES ({});&#34;.format(name_full,
+                                                                  &#34;,&#34;.join(quotes), &#34;,&#34;.join(vals))
+
+            c.execute(exec_str)
+            conn.commit()
+            c.close()
+            inserted = True
+            break
+
+        conn.close()
+        if not inserted:
+            raise Exception(&#34;Object was not/could not be added to any table&#34;)
+
+    def clean(self):
+        &#34;&#34;&#34;Cleans output directories&#34;&#34;&#34;
+        if self.is_sql_backed():
+            self._setup_tables()
+        else:
+            try:
+                os.mkdir(self.out)
+            except Exception as e:
+                if len(os.listdir(self.out)) &gt; 0:
+                    self.print(e)
+                    self.print(
+                        &#34;Problem creating out directory {}, test data already there&#34;.format(self.out))
+                    exit(0)
+
+    def _merged_args(self, back_vars):
+        benchmark = self.bench.variables.produce_args()
+        backend = back_vars.produce_args()
+        args = []
+        for back in backend:
+            arg = dict(
+                benchmark=benchmark,
+                backend=back
+            )
+            args.append(arg)
+
+        return args
+
+    def parse(self):
+        # Pretty messy having to do this twice but need to retrieve proper data
+        if self._cached:
+            self.print(&#34;Using cached parsed output&#34;)
+            return
+
+        combined = []
+        for back in self.backends:
+            args = self._merged_args(back.variables)
+            for arg_set in args:
+                bench_args = arg_set[&#34;benchmark&#34;]
+                back_args = arg_set[&#34;backend&#34;]
+                for ba in bench_args:
+                    metrics = Metrics()
+                    for k, v in ba.items():
+                        metrics.add_constant(k, v)
+                    for k, v in back_args.items():
+                        metrics.add_constant(k, v)
+                    for iteration in range(0,  self.bench.iterations):
+                        out_file = os.path.abspath(self.out_file(back,
+                                                                 back_args, ba, iteration))
+                        self.parser(metrics, out_file)
+                    combined.append(metrics)
+
+        self._cached = combined
+
+    def out_file(self, back_obj, backend_args, bench_args, iteration):
+        &#34;&#34;&#34;Determine output filename given a some backend and bench arguments
+
+        output is {Execution_name}_b_{BCK1-BCK2}_{BCKVARS}_{WRKVARS}
+        &#34;&#34;&#34;
+        file = self.bench.__class__.__name__
+        file += &#34;_b_{}&#34;.format(back_obj.name)
+        for name in back_obj.variables.y_names():
+            file += &#34;_{}&#34;.format(backend_args[name])
+
+        for name in self.bench.variables.y_names():
+            file += &#34;_{}&#34;.format(bench_args[name])
+        file += &#34;_{}&#34;.format(iteration)
+
+        if self.is_sql_backed():
+            return &#34;{}&#34;.format(file)
+
+        return &#34;{}/{}&#34;.format(self.out, file)
+
+    def is_sql_backed(self):
+        &#34;&#34;&#34;Checks if execution storage backend is sqlite3&#34;&#34;&#34;
+        return self.out.endswith(&#39;.db&#39;)
+
+    def execute(self):
+        &#34;&#34;&#34;Execute the execution defined
+
+        Argument:
+            args: Arguments namespace from the cli
+        &#34;&#34;&#34;
+        # Go through every registered backend
+        for back in self.backends:
+            args = self._merged_args(back.variables)
+
+            # Go through every argument possibility given consts
+            # and variables
+            for arg_set in args:
+                bench_args = arg_set[&#34;benchmark&#34;]
+                back_args = arg_set[&#34;backend&#34;]
+                back.__class__.start(**back_args)
+                # Go through every benchmark argument listing
+                for ba in bench_args:
+                    for iteration in range(0,  self.bench.iterations):
+                        out_file = os.path.abspath(self.out_file(back,
+                                                                 back_args, ba, iteration))
+                        self.bench.__class__.run(back.name, out_file, **ba)
+                back.__class__.uninit()
+
+    def param_exists(self, name: str) -&gt; bool:
+        &#34;&#34;&#34;Checks if a param exists within either the benchmark or the parser&#34;&#34;&#34;
+        bench_has = self.bench.param_exists(name)
+        if self.backends:
+            backend_has = any([back_obj.runtime_variables.param_exists(name)
+                               for back_obj in self.backends])
+        else:
+            backend_has = False
+
+        return bench_has or backend_has
+
+    def __str__(self):
+        title = self.bench.name + &#34;(&#34;
+        for back in self.backends:
+            title += &#34;{}&#34;.format(back.name)
+        title += &#34;)&#34;
+        return &#34;{}&#34;.format(title)
+__pdoc__[&#34;Execution&#34;] = False
+
+class NoBenchmark:
+    def __init__(self, parser):
+        self.parser = parser
+__pdoc__[&#34;NoBenchmark&#34;] = False
+
+
+class ParseExecution:
+    def __init__(self, data: str, out_dir: str, func):
+        self._data = data
+        self.out = out_dir
+        self._func = func
+        self.bench = NoBenchmark(self)
+        self._cached = None
+
+    def fields(self):
+        return self._obj.keys()
+
+    def is_sql_backed(self):
+        return False
+
+    def param_exists(self, param):
+        return True
+
+    def _parse_file(self, metrics, path: str, iter):
+        self._func(metrics, path)
+
+    def parse(self):
+        if self._cached:
+            return
+
+        metrics = Metrics()
+        if os.path.isdir(self._data):
+            i = 0
+            for file in os.listdir(self._data):
+                path = os.path.join(self._data, file)
+                self._parse_file(metrics, path, i)
+                i += 1
+        else:
+            self._parse_file(metrics, self._data, 0)
+
+        self._cached = [metrics]
+
+    def execute(self):
+        pass
+
+    def clean(self):
+        pass
+__pdoc__[&#34;ParseExecution&#34;] = False
+
+
+def plan_parse(file: str, parse_file_func, out_dir: str = None):
+    &#34;&#34;&#34;Plan a parsing Execution
+
+    Sometimes its not required to have progbg run actual benchmarks, and you may
+    wish to compare to other frameworks which have auto runners. The plan_parse
+    function allows for the ability to capture data output from a text file and
+    integrate it into graphs.
+
+    Args:
+        file (str): File to be parsed and sent to the parse_file_func argument
+        parse_file_func (Function): Function to parse the data of the file argument
+        out_dir (str, optional): Directory to place parsed data
+
+    Returns:
+        Execution object
+
+    Example:
+        &gt;&gt;&gt; def my_text_parser(metrics: Metrics, out_file: str):
+        &gt;&gt;&gt;     ...
+        &gt;&gt;&gt; exec = plan_parse(&#34;my_data.txt&#34;, my_text_parser)
+    &#34;&#34;&#34;
+    _sb_executions.append(ParseExecution(file, out_dir, parse_file_func))
+    return _sb_executions[-1]
+
+
+def compose_backends(*backends):
+    &#34;&#34;&#34;Composes registered backend classes into anonymous class
+
+    This function is used to compose one or more backends into an anonymous class
+    which can be used when defining executions in `plan_execution`.
+
+    Args:
+        *backends (class): Class objects to compose together
+
+    Examples:
+        &gt;&gt;&gt; 
+        &gt;&gt;&gt; @registerbackend     
+        &gt;&gt;&gt; class Backend1
+        &gt;&gt;&gt;     ...
+        &gt;&gt;&gt; 
+        &gt;&gt;&gt; @registerbackend
+        &gt;&gt;&gt; class Backend2
+        &gt;&gt;&gt;     ...
+        &gt;&gt;&gt; 
+        &gt;&gt;&gt; composition = compose_backends(Backend1, Backend2)
+    &#34;&#34;&#34;
+    def construct(self, consts={}, vars=[]):
+        self.variables = Variables(consts, vars)
+        self.name = &#34;-&#34;.join([b.__name__ for b in backends])
+
+    def start(**kwargs):
+        for backend in backends:
+            backend.start(**kwargs)
+
+    def uninit():
+        for backend in reversed(backends):
+            backend.uninit()
+
+    composition = type(&#34;&#34;, (), {
+        &#34;__init__&#34;: construct,
+        &#34;start&#34;: start,
+        &#34;uninit&#34;: uninit
+    })
+
+    return composition
+
+
+def plan_execution(runner,
+                   backends: List = None,
+                   parser=None,
+                   out: str = None) -&gt; None:
+    &#34;&#34;&#34;Plan an execution
+
+    Definition of an execution of a workload/benchmark and backends you wish to run the workload
+    on.
+
+    Args:
+        runner (Benchmark): Constructed Benchmark object
+        backends (List): List of Constructed backends to run on    
+        parser (Function): Parsing function which takes a metrics, and out_file as args.
+        out (str): Directory in which to place parsed output.
+
+    Returns:
+        Execution object
+
+    Examples:
+        
+        &gt;&gt;&gt; @registerbenchmark
+        &gt;&gt;&gt; class benchmark:
+        &gt;&gt;&gt;     def run(x = 10):
+        &gt;&gt;&gt;         ...
+        &gt;&gt;&gt; 
+        &gt;&gt;&gt; @registerbackend:
+        &gt;&gt;&gt; class myback:
+        &gt;&gt;&gt;     ...
+        &gt;&gt;&gt; 
+        &gt;&gt;&gt; def my_parser(metrics: Metrics, out_file: str):
+        &gt;&gt;&gt;     ...
+        &gt;&gt;&gt; 
+        &gt;&gt;&gt; execution = plan_execution(
+        &gt;&gt;&gt;                 benchmark({}, [(&#34;x&#34;, range(0, 10))]),
+        &gt;&gt;&gt;                 out = &#34;out&#34;,
+        &gt;&gt;&gt;                 backends = [myback()],
+        &gt;&gt;&gt;                 parser = my_parser
+        &gt;&gt;&gt;             )
+
+        Basic example, notice that when binding arguments to a workload (through construction). In the
+        above example:
+        &gt;&gt;&gt; benchmark({}, [(&#34;x&#34;, range(0, 10))])
+
+        You bind variables to the named arguments of the run function (or init function for backends).
+        In this example is the `x` variable, which we have chosen to vary from 0 to 10. If for example
+        we wished for `x` to remain constant we would place it within the first argument of the
+        constructor. Like so:
+
+        &gt;&gt;&gt; execution = plan_execution(
+        &gt;&gt;&gt;                 benchmark(dict(
+        &gt;&gt;&gt;                     x = 5
+        &gt;&gt;&gt;                 ), []),
+        &gt;&gt;&gt;                 out = &#34;out&#34;,
+        &gt;&gt;&gt;                 backends = [myback()],
+        &gt;&gt;&gt;                 parser = my_parser
+        &gt;&gt;&gt;             )
+
+
+    &#34;&#34;&#34;
+
+    # We have to fix up the variables, we do this so the user doesnt
+    # have to re-input variables twice. Parser also needs to know
+    # variable names to create the object
+    _sb_executions.append(Execution(runner, backends, parser, out))
+    return _sb_executions[-1]
+
+
+def plan_graph(title: str, graphobj):
+    &#34;&#34;&#34;Plan a graph object
+    Takes a graph object (LineGraph, etc) and ties the a name to it to be
+    used by figures
+
+    Args:
+        title (str): Title of the graph object
+        graphobj (obj): Specified graph to use
+
+
+    Example:
+        &gt;&gt;&gt; exec1 = plan_execution(...)
+        &gt;&gt;&gt; exec2 = plan_execution(...)
+        &gt;&gt;&gt; bf = BarFactory(exec1)
+        &gt;&gt;&gt; bf_two = BarFactory(exec2)
+        &gt;&gt;&gt; graph = plan_graph(
+        &gt;&gt;&gt;             &#34;My Custom Graph&#34;,
+        &gt;&gt;&gt;             BarGraph(
+        &gt;&gt;&gt;                 [
+        &gt;&gt;&gt;                     [bf(&#34;data-one&#34;), bf_two(&#34;data-one&#34;)],
+        &gt;&gt;&gt;                     [bf(&#34;data-two&#34;), bf_two(&#34;data-two&#34;)],
+        &gt;&gt;&gt;                 ],
+        &gt;&gt;&gt;             ... 
+        &gt;&gt;&gt; )
+
+        Above is an example of using plan graph.  Arguments are mostly dependent on each implementation
+        of the Graph. See `graphing.BarGraph`, `graphing.LineGraph`, 
+        `graphing.CustomGraph`, `graphing.Histogram` etc.
+    &#34;&#34;&#34;
+    if title in _sb_graphs:
+        error(&#34;Graph already defined: {}&#34;.format(title))
+
+    _sb_graphs[title] = graphobj
+
+
+def _is_static(func):
+    return isinstance(func, types.FunctionType)
+
+
+def _has_required_args(func):
+    return len(inspect.getfullargspec(func).args) &gt;= 2
+
+
+_names_used = []
+
+
+def _check_names(cls, func, is_run=False):
+    if is_run:
+        args = inspect.getfullargspec(func).args[2:]
+    else:
+        args = inspect.getfullargspec(func).args
+    for name in args:
+        # if name in _names_used:
+        # error(&#34;Class &#39;{}&#39;-&gt; function &#39;{}&#39; uses already defined argument name: {}&#34;.format(
+        # cls.__name__, func.__name__, name))
+
+        _names_used.append(name)
+
+
+def registerbenchmark(cls):
+    &#34;&#34;&#34;Register a benchmark with ProgBG
+
+    Args:
+        cls (class): Class to wrap and register
+
+    Returns:
+        Wrapped class object
+    &#34;&#34;&#34;
+    if not hasattr(cls, &#34;run&#34;):
+        error(&#34;Benchmark requires the run function: {}&#34;.format(cls.__name__))
+
+    if not _has_required_args(cls.run):
+        error(&#34;Benchmark run needs 2 argument for output path: {}&#34;.format(cls.__name__))
+
+    _check_names(cls, cls.run, is_run=True)
+
+    def construct(self, consts={}, vars=[], iterations=1):
+        self.variables = Variables(consts, vars)
+        self.iterations = iterations
+        self.name = cls.__name__
+
+    cls.__init__ = construct
+
+    _sb_registered_benchmarks[cls.__name__.lower()] = cls
+
+    return cls
+
+
+def _get_args(spec, **kwargs):
+    args = dict()
+    for i, k in enumerate(spec.args):
+        if k in kwargs:
+            args[k] = kwargs[k]
+    return args
+
+
+def registerbackend(cls):
+    &#34;&#34;&#34;Register a class with ProgBG
+
+    Args:
+    cls (class): Class object to wrap and register
+
+    Returns:
+        Wrapped class object
+    &#34;&#34;&#34;
+    if not hasattr(cls, &#34;start&#34;):
+        error(&#34;Backend requires the init function: {}&#34;.format(cls.__name__))
+
+    if not hasattr(cls, &#34;uninit&#34;):
+        error(&#34;Backend requires the uninit function: {}&#34;.format(cls.__name__))
+
+    _check_names(cls, cls.start)
+    _check_names(cls, cls.uninit)
+
+    def construct(self, consts={}, vars=[]):
+        self.vars = Variables(consts, vars)
+        self.name = cls.__name__
+
+    spec = inspect.getfullargspec(cls.start)
+    old = cls.start
+
+    def wrapped_start(**kwargs):
+        args = _get_args(spec, **kwargs)
+        return old(**args)
+
+    cls.__init__ = construct
+    cls.start = wrapped_start
+
+    _sb_registered_backend[cls.__name__.lower()] = cls
+
+    return cls
+
+
+def import_plan(filepath: str, mod_globals):
+    &#34;&#34;&#34;Import a .py file to be used by the progbg system
+    When the plan is imported, the script is run (all the plan_* function calls)
+    this creates and fills global variables within that module. Since modules do
+    not share global objects we must edit progbg global table (_EDIT_GLOBAL_TABLE)
+    to have these objects as well (figures, graphs, executions)
+
+    Arguments:
+        filepath: Path to the .py plan file
+        mod_globals: Globals dictionary object (globals())
+    &#34;&#34;&#34;
+    spec = importlib.util.spec_from_file_location(&#39;_plan&#39;,
+                                                  filepath)
+    plan_mod = importlib.util.module_from_spec(spec)
+    # Different module so different global
+    sys.modules[&#34;_plan&#34;] = plan_mod
+    spec.loader.exec_module(plan_mod)
+    members = inspect.getmembers(plan_mod)
+    # We must find the module that was imported in the user given file. This
+    # file imports from us, so we must grab that module they imported and
+    # set our globals to it.  This is because globals across modules
+    # are not unique, meaning each individual module has its own global
+    # so to make our &#39;globals&#39; truly global we have to set our
+    # globals to theirs
+    imported_name = &#34;&#34;
+    for name, mod in members:
+        if hasattr(mod, &#39;_sb_executions&#39;):
+            imported_name = name
+
+    if not imported_name:
+        error(&#34;Plan does import progbg: Fix by adding import progbg&#34;)
+
+    # Fix globals in our namespace
+    for name in _EDIT_GLOBAL_TABLE:
+        mod_globals[name] = getattr(getattr(plan_mod, imported_name), name)
+__pdoc__[&#34;import_plan&#34;] = False
+
+
+def default_formatter(fig, axes):
+    &#34;&#34;&#34; Default formatter placeholder
+
+    Override this to apply a default format function to all graphs and figures
+    &#34;&#34;&#34;
+
+def _format_fig(fig, axes, formatter):
+    if not formatter:
+        formatter = default_formatter
+
+    formatter(fig, axes)
+
+class Figure:
+    &#34;&#34;&#34;Create figure given a set of graphs, for more information see plan_figure documentation&#34;&#34;&#34;
+
+    def __init__(self,
+                 name: str,
+                 graphs: List[List[str]],
+                 formatter,
+                 out: str):
+        check_formatter(formatter)
+
+        self.name = name
+        self.graphs = graphs
+        self.formatter = formatter
+        self.out = out
+
+    def print(self, strn: str) -&gt; None:
+        &#34;&#34;&#34;Pretty print function&#34;&#34;&#34;
+        print(&#34;\033[1;35m[{}]:\033[0m {}&#34;.format(self.out, strn))
+
+    def create(self):
+        &#34;&#34;&#34;Create the figure&#34;&#34;&#34;
+        self.print(&#34;Creating Figure&#34;)
+        h = len(self.graphs)
+        w = len(self.graphs[0])
+        fig, axes = plt.subplots(ncols=w, nrows=h, squeeze=False)
+        for y in range(0, h):
+            for x in range(0, w):
+                graph = _sb_graphs[self.graphs[y][x]]
+                try:
+                    graph.graph(axes[y][x], silent=True)
+                except Exception as err:
+                    error(&#34;Problem with graph {}: {}&#34;.format(self.name, err))
+
+        _format_fig(fig, axes, self.formatter)
+
+        out = os.path.join(GRAPHS_DIR, self.out)
+        plt.savefig(out, bbox_inches=&#34;tight&#34;, pad_inches=0)
+        if not out.endswith(&#34;.svg&#34;):
+            out = &#34;.&#34;.join(out.split(&#34;.&#34;)[:-1]) + &#34;.svg&#34;
+            plt.savefig(out, bbox_inches=&#34;tight&#34;, pad_inches=0)
+__pdoc__[&#34;Figure&#34;] = False
+
+def plan_figure(title: str, graph_layout: List[List[str]], formatter, out: str):
+    &#34;&#34;&#34;Plan a figure given a set of graphs
+    Arguments:
+        title (str): Title of the figure
+        graph_layout (List[List]): An M by N matrix that defines figure layout.
+        formatter (Function): Function for custom formatting.
+        out (str): output name for the figure.
+    Examples:
+        &gt;&gt;&gt; graph1 = plan_graph(...)
+        &gt;&gt;&gt; graph2 = plan_graph(...)
+        &gt;&gt;&gt; graph3 = plan_graph(...)
+        &gt;&gt;&gt; graph4 = plan_graph(...)
+        &gt;&gt;&gt; 
+        &gt;&gt;&gt; def myformatter(fig, axes):
+        &gt;&gt;&gt;     # Axes here will be a list over a single object in the same layout
+        &gt;&gt;&gt;     # as the provided graph_layout argument.
+        &gt;&gt;&gt;     ...
+        &gt;&gt;&gt; 
+        &gt;&gt;&gt; plan_figure(&#34;My Custom Graph&#34;,
+        &gt;&gt;&gt;             [[graph1, graph2], [graph3, graph4]],
+        &gt;&gt;&gt;             formatter = myformatter,
+        &gt;&gt;&gt;             out = &#34;myfigure.svg&#34;
+        &gt;&gt;&gt; )
+
+        The above example will create a figure that is layed out like the following:
+
+         Graph1  Graph2 
+
+         Graph3  Graph4 
+
+    &#34;&#34;&#34;
+    if name in _sb_figures:
+        error(&#34;Figure already defined: {}&#34;.format(name))
+
+    _sb_figures[title] = Figure(title, graph_layout, formatter, out)
+
+
+def execute_plan(plan: str, args):
+    &#34;&#34;&#34;Entry point to start executing progbg
+
+    Args:
+        plan (str): Path to plan .py file
+        args (Namespace): Namespace of arguments (no_exec (bool))
+    &#34;&#34;&#34;
+    import_plan(plan, globals())
+
+    if not args.no_exec:
+        for execution in _sb_executions:
+            execution.clean()
+
+    if not args.no_exec:
+        for execution in _sb_executions:
+            execution.execute()
+
+    for execution in _sb_executions:
+        execution.parse()
+
+    try:
+        os.mkdir(GRAPHS_DIR)
+    except FileExistsError:
+        pass
+
+    for graph in _sb_graphs.values():
+        if len(graph.out):
+            fig, axes = plt.subplots()
+            fig.set_size_inches(3.25, 3.25)
+            graph._graph(axes)
+            _format_fig(fig, axes, graph.formatter)
+            for curout in graph.out:
+                out = os.path.join(GRAPHS_DIR, curout)
+                try:
+                    plt.savefig(out)
+                except:
+                    print(&#34;Problem with output {}&#34;.format(out))
+
+    for fig in _sb_figures.values():
+        fig.create()
+
+    return globals()</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="progbg.core.compose_backends"><code class="name flex">
+<span>def <span class="ident">compose_backends</span></span>(<span>*backends)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Composes registered backend classes into anonymous class</p>
+<p>This function is used to compose one or more backends into an anonymous class
+which can be used when defining executions in <code><a title="progbg.core.plan_execution" href="#progbg.core.plan_execution">plan_execution()</a></code>.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>*backends</code></strong> :&ensp;<code>class</code></dt>
+<dd>Class objects to compose together</dd>
+</dl>
+<h2 id="examples">Examples</h2>
+<pre><code class="python-repl">&gt;&gt;&gt; 
+&gt;&gt;&gt; @registerbackend     
+&gt;&gt;&gt; class Backend1
+&gt;&gt;&gt;     ...
+&gt;&gt;&gt; 
+&gt;&gt;&gt; @registerbackend
+&gt;&gt;&gt; class Backend2
+&gt;&gt;&gt;     ...
+&gt;&gt;&gt; 
+&gt;&gt;&gt; composition = compose_backends(Backend1, Backend2)
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def compose_backends(*backends):
+    &#34;&#34;&#34;Composes registered backend classes into anonymous class
+
+    This function is used to compose one or more backends into an anonymous class
+    which can be used when defining executions in `plan_execution`.
+
+    Args:
+        *backends (class): Class objects to compose together
+
+    Examples:
+        &gt;&gt;&gt; 
+        &gt;&gt;&gt; @registerbackend     
+        &gt;&gt;&gt; class Backend1
+        &gt;&gt;&gt;     ...
+        &gt;&gt;&gt; 
+        &gt;&gt;&gt; @registerbackend
+        &gt;&gt;&gt; class Backend2
+        &gt;&gt;&gt;     ...
+        &gt;&gt;&gt; 
+        &gt;&gt;&gt; composition = compose_backends(Backend1, Backend2)
+    &#34;&#34;&#34;
+    def construct(self, consts={}, vars=[]):
+        self.variables = Variables(consts, vars)
+        self.name = &#34;-&#34;.join([b.__name__ for b in backends])
+
+    def start(**kwargs):
+        for backend in backends:
+            backend.start(**kwargs)
+
+    def uninit():
+        for backend in reversed(backends):
+            backend.uninit()
+
+    composition = type(&#34;&#34;, (), {
+        &#34;__init__&#34;: construct,
+        &#34;start&#34;: start,
+        &#34;uninit&#34;: uninit
+    })
+
+    return composition</code></pre>
+</details>
+</dd>
+<dt id="progbg.core.default_formatter"><code class="name flex">
+<span>def <span class="ident">default_formatter</span></span>(<span>fig, axes)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Default formatter placeholder</p>
+<p>Override this to apply a default format function to all graphs and figures</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def default_formatter(fig, axes):
+    &#34;&#34;&#34; Default formatter placeholder
+
+    Override this to apply a default format function to all graphs and figures
+    &#34;&#34;&#34;</code></pre>
+</details>
+</dd>
+<dt id="progbg.core.execute_plan"><code class="name flex">
+<span>def <span class="ident">execute_plan</span></span>(<span>plan: str, args)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Entry point to start executing progbg</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>plan</code></strong> :&ensp;<code>str</code></dt>
+<dd>Path to plan .py file</dd>
+<dt><strong><code>args</code></strong> :&ensp;<code>Namespace</code></dt>
+<dd>Namespace of arguments (no_exec (bool))</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def execute_plan(plan: str, args):
+    &#34;&#34;&#34;Entry point to start executing progbg
+
+    Args:
+        plan (str): Path to plan .py file
+        args (Namespace): Namespace of arguments (no_exec (bool))
+    &#34;&#34;&#34;
+    import_plan(plan, globals())
+
+    if not args.no_exec:
+        for execution in _sb_executions:
+            execution.clean()
+
+    if not args.no_exec:
+        for execution in _sb_executions:
+            execution.execute()
+
+    for execution in _sb_executions:
+        execution.parse()
+
+    try:
+        os.mkdir(GRAPHS_DIR)
+    except FileExistsError:
+        pass
+
+    for graph in _sb_graphs.values():
+        if len(graph.out):
+            fig, axes = plt.subplots()
+            fig.set_size_inches(3.25, 3.25)
+            graph._graph(axes)
+            _format_fig(fig, axes, graph.formatter)
+            for curout in graph.out:
+                out = os.path.join(GRAPHS_DIR, curout)
+                try:
+                    plt.savefig(out)
+                except:
+                    print(&#34;Problem with output {}&#34;.format(out))
+
+    for fig in _sb_figures.values():
+        fig.create()
+
+    return globals()</code></pre>
+</details>
+</dd>
+<dt id="progbg.core.plan_execution"><code class="name flex">
+<span>def <span class="ident">plan_execution</span></span>(<span>runner, backends: List = None, parser=None, out: str = None) ‑> NoneType</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Plan an execution</p>
+<p>Definition of an execution of a workload/benchmark and backends you wish to run the workload
+on.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>runner</code></strong> :&ensp;<code>Benchmark</code></dt>
+<dd>Constructed Benchmark object</dd>
+<dt><strong><code>backends</code></strong> :&ensp;<code>List</code></dt>
+<dd>List of Constructed backends to run on
+</dd>
+<dt><strong><code>parser</code></strong> :&ensp;<code>Function</code></dt>
+<dd>Parsing function which takes a metrics, and out_file as args.</dd>
+<dt><strong><code>out</code></strong> :&ensp;<code>str</code></dt>
+<dd>Directory in which to place parsed output.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Execution object</p>
+<h2 id="examples">Examples</h2>
+<pre><code class="python-repl">&gt;&gt;&gt; @registerbenchmark
+&gt;&gt;&gt; class benchmark:
+&gt;&gt;&gt;     def run(x = 10):
+&gt;&gt;&gt;         ...
+&gt;&gt;&gt; 
+&gt;&gt;&gt; @registerbackend:
+&gt;&gt;&gt; class myback:
+&gt;&gt;&gt;     ...
+&gt;&gt;&gt; 
+&gt;&gt;&gt; def my_parser(metrics: Metrics, out_file: str):
+&gt;&gt;&gt;     ...
+&gt;&gt;&gt; 
+&gt;&gt;&gt; execution = plan_execution(
+&gt;&gt;&gt;                 benchmark({}, [(&quot;x&quot;, range(0, 10))]),
+&gt;&gt;&gt;                 out = &quot;out&quot;,
+&gt;&gt;&gt;                 backends = [myback()],
+&gt;&gt;&gt;                 parser = my_parser
+&gt;&gt;&gt;             )
+</code></pre>
+<p>Basic example, notice that when binding arguments to a workload (through construction). In the
+above example:</p>
+<pre><code class="python-repl">&gt;&gt;&gt; benchmark({}, [(&quot;x&quot;, range(0, 10))])
+</code></pre>
+<p>You bind variables to the named arguments of the run function (or init function for backends).
+In this example is the <code>x</code> variable, which we have chosen to vary from 0 to 10. If for example
+we wished for <code>x</code> to remain constant we would place it within the first argument of the
+constructor. Like so:</p>
+<pre><code class="python-repl">&gt;&gt;&gt; execution = plan_execution(
+&gt;&gt;&gt;                 benchmark(dict(
+&gt;&gt;&gt;                     x = 5
+&gt;&gt;&gt;                 ), []),
+&gt;&gt;&gt;                 out = &quot;out&quot;,
+&gt;&gt;&gt;                 backends = [myback()],
+&gt;&gt;&gt;                 parser = my_parser
+&gt;&gt;&gt;             )
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def plan_execution(runner,
+                   backends: List = None,
+                   parser=None,
+                   out: str = None) -&gt; None:
+    &#34;&#34;&#34;Plan an execution
+
+    Definition of an execution of a workload/benchmark and backends you wish to run the workload
+    on.
+
+    Args:
+        runner (Benchmark): Constructed Benchmark object
+        backends (List): List of Constructed backends to run on    
+        parser (Function): Parsing function which takes a metrics, and out_file as args.
+        out (str): Directory in which to place parsed output.
+
+    Returns:
+        Execution object
+
+    Examples:
+        
+        &gt;&gt;&gt; @registerbenchmark
+        &gt;&gt;&gt; class benchmark:
+        &gt;&gt;&gt;     def run(x = 10):
+        &gt;&gt;&gt;         ...
+        &gt;&gt;&gt; 
+        &gt;&gt;&gt; @registerbackend:
+        &gt;&gt;&gt; class myback:
+        &gt;&gt;&gt;     ...
+        &gt;&gt;&gt; 
+        &gt;&gt;&gt; def my_parser(metrics: Metrics, out_file: str):
+        &gt;&gt;&gt;     ...
+        &gt;&gt;&gt; 
+        &gt;&gt;&gt; execution = plan_execution(
+        &gt;&gt;&gt;                 benchmark({}, [(&#34;x&#34;, range(0, 10))]),
+        &gt;&gt;&gt;                 out = &#34;out&#34;,
+        &gt;&gt;&gt;                 backends = [myback()],
+        &gt;&gt;&gt;                 parser = my_parser
+        &gt;&gt;&gt;             )
+
+        Basic example, notice that when binding arguments to a workload (through construction). In the
+        above example:
+        &gt;&gt;&gt; benchmark({}, [(&#34;x&#34;, range(0, 10))])
+
+        You bind variables to the named arguments of the run function (or init function for backends).
+        In this example is the `x` variable, which we have chosen to vary from 0 to 10. If for example
+        we wished for `x` to remain constant we would place it within the first argument of the
+        constructor. Like so:
+
+        &gt;&gt;&gt; execution = plan_execution(
+        &gt;&gt;&gt;                 benchmark(dict(
+        &gt;&gt;&gt;                     x = 5
+        &gt;&gt;&gt;                 ), []),
+        &gt;&gt;&gt;                 out = &#34;out&#34;,
+        &gt;&gt;&gt;                 backends = [myback()],
+        &gt;&gt;&gt;                 parser = my_parser
+        &gt;&gt;&gt;             )
+
+
+    &#34;&#34;&#34;
+
+    # We have to fix up the variables, we do this so the user doesnt
+    # have to re-input variables twice. Parser also needs to know
+    # variable names to create the object
+    _sb_executions.append(Execution(runner, backends, parser, out))
+    return _sb_executions[-1]</code></pre>
+</details>
+</dd>
+<dt id="progbg.core.plan_figure"><code class="name flex">
+<span>def <span class="ident">plan_figure</span></span>(<span>title: str, graph_layout: List[List[str]], formatter, out: str)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Plan a figure given a set of graphs</p>
+<h2 id="arguments">Arguments</h2>
+<p>title (str): Title of the figure
+graph_layout (List[List]): An M by N matrix that defines figure layout.
+formatter (Function): Function for custom formatting.
+out (str): output name for the figure.</p>
+<h2 id="examples">Examples</h2>
+<pre><code class="python-repl">&gt;&gt;&gt; graph1 = plan_graph(...)
+&gt;&gt;&gt; graph2 = plan_graph(...)
+&gt;&gt;&gt; graph3 = plan_graph(...)
+&gt;&gt;&gt; graph4 = plan_graph(...)
+&gt;&gt;&gt; 
+&gt;&gt;&gt; def myformatter(fig, axes):
+&gt;&gt;&gt;     # Axes here will be a list over a single object in the same layout
+&gt;&gt;&gt;     # as the provided graph_layout argument.
+&gt;&gt;&gt;     ...
+&gt;&gt;&gt; 
+&gt;&gt;&gt; plan_figure(&quot;My Custom Graph&quot;,
+&gt;&gt;&gt;             [[graph1, graph2], [graph3, graph4]],
+&gt;&gt;&gt;             formatter = myformatter,
+&gt;&gt;&gt;             out = &quot;myfigure.svg&quot;
+&gt;&gt;&gt; )
+</code></pre>
+<p>The above example will create a figure that is layed out like the following:</p>
+<p>Graph1
+Graph2 </p>
+<p>Graph3
+Graph4</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def plan_figure(title: str, graph_layout: List[List[str]], formatter, out: str):
+    &#34;&#34;&#34;Plan a figure given a set of graphs
+    Arguments:
+        title (str): Title of the figure
+        graph_layout (List[List]): An M by N matrix that defines figure layout.
+        formatter (Function): Function for custom formatting.
+        out (str): output name for the figure.
+    Examples:
+        &gt;&gt;&gt; graph1 = plan_graph(...)
+        &gt;&gt;&gt; graph2 = plan_graph(...)
+        &gt;&gt;&gt; graph3 = plan_graph(...)
+        &gt;&gt;&gt; graph4 = plan_graph(...)
+        &gt;&gt;&gt; 
+        &gt;&gt;&gt; def myformatter(fig, axes):
+        &gt;&gt;&gt;     # Axes here will be a list over a single object in the same layout
+        &gt;&gt;&gt;     # as the provided graph_layout argument.
+        &gt;&gt;&gt;     ...
+        &gt;&gt;&gt; 
+        &gt;&gt;&gt; plan_figure(&#34;My Custom Graph&#34;,
+        &gt;&gt;&gt;             [[graph1, graph2], [graph3, graph4]],
+        &gt;&gt;&gt;             formatter = myformatter,
+        &gt;&gt;&gt;             out = &#34;myfigure.svg&#34;
+        &gt;&gt;&gt; )
+
+        The above example will create a figure that is layed out like the following:
+
+         Graph1  Graph2 
+
+         Graph3  Graph4 
+
+    &#34;&#34;&#34;
+    if name in _sb_figures:
+        error(&#34;Figure already defined: {}&#34;.format(name))
+
+    _sb_figures[title] = Figure(title, graph_layout, formatter, out)</code></pre>
+</details>
+</dd>
+<dt id="progbg.core.plan_graph"><code class="name flex">
+<span>def <span class="ident">plan_graph</span></span>(<span>title: str, graphobj)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Plan a graph object
+Takes a graph object (LineGraph, etc) and ties the a name to it to be
+used by figures</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>title</code></strong> :&ensp;<code>str</code></dt>
+<dd>Title of the graph object</dd>
+<dt><strong><code>graphobj</code></strong> :&ensp;<code>obj</code></dt>
+<dd>Specified graph to use</dd>
+</dl>
+<h2 id="example">Example</h2>
+<pre><code class="python-repl">&gt;&gt;&gt; exec1 = plan_execution(...)
+&gt;&gt;&gt; exec2 = plan_execution(...)
+&gt;&gt;&gt; bf = BarFactory(exec1)
+&gt;&gt;&gt; bf_two = BarFactory(exec2)
+&gt;&gt;&gt; graph = plan_graph(
+&gt;&gt;&gt;             &quot;My Custom Graph&quot;,
+&gt;&gt;&gt;             BarGraph(
+&gt;&gt;&gt;                 [
+&gt;&gt;&gt;                     [bf(&quot;data-one&quot;), bf_two(&quot;data-one&quot;)],
+&gt;&gt;&gt;                     [bf(&quot;data-two&quot;), bf_two(&quot;data-two&quot;)],
+&gt;&gt;&gt;                 ],
+&gt;&gt;&gt;             ... 
+&gt;&gt;&gt; )
+</code></pre>
+<p>Above is an example of using plan graph.
+Arguments are mostly dependent on each implementation
+of the Graph. See <code>graphing.BarGraph</code>, <code>graphing.LineGraph</code>,
+<code>graphing.CustomGraph</code>, <code>graphing.Histogram</code> etc.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def plan_graph(title: str, graphobj):
+    &#34;&#34;&#34;Plan a graph object
+    Takes a graph object (LineGraph, etc) and ties the a name to it to be
+    used by figures
+
+    Args:
+        title (str): Title of the graph object
+        graphobj (obj): Specified graph to use
+
+
+    Example:
+        &gt;&gt;&gt; exec1 = plan_execution(...)
+        &gt;&gt;&gt; exec2 = plan_execution(...)
+        &gt;&gt;&gt; bf = BarFactory(exec1)
+        &gt;&gt;&gt; bf_two = BarFactory(exec2)
+        &gt;&gt;&gt; graph = plan_graph(
+        &gt;&gt;&gt;             &#34;My Custom Graph&#34;,
+        &gt;&gt;&gt;             BarGraph(
+        &gt;&gt;&gt;                 [
+        &gt;&gt;&gt;                     [bf(&#34;data-one&#34;), bf_two(&#34;data-one&#34;)],
+        &gt;&gt;&gt;                     [bf(&#34;data-two&#34;), bf_two(&#34;data-two&#34;)],
+        &gt;&gt;&gt;                 ],
+        &gt;&gt;&gt;             ... 
+        &gt;&gt;&gt; )
+
+        Above is an example of using plan graph.  Arguments are mostly dependent on each implementation
+        of the Graph. See `graphing.BarGraph`, `graphing.LineGraph`, 
+        `graphing.CustomGraph`, `graphing.Histogram` etc.
+    &#34;&#34;&#34;
+    if title in _sb_graphs:
+        error(&#34;Graph already defined: {}&#34;.format(title))
+
+    _sb_graphs[title] = graphobj</code></pre>
+</details>
+</dd>
+<dt id="progbg.core.plan_parse"><code class="name flex">
+<span>def <span class="ident">plan_parse</span></span>(<span>file: str, parse_file_func, out_dir: str = None)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Plan a parsing Execution</p>
+<p>Sometimes its not required to have progbg run actual benchmarks, and you may
+wish to compare to other frameworks which have auto runners. The plan_parse
+function allows for the ability to capture data output from a text file and
+integrate it into graphs.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>file</code></strong> :&ensp;<code>str</code></dt>
+<dd>File to be parsed and sent to the parse_file_func argument</dd>
+<dt><strong><code>parse_file_func</code></strong> :&ensp;<code>Function</code></dt>
+<dd>Function to parse the data of the file argument</dd>
+<dt><strong><code>out_dir</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>Directory to place parsed data</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Execution object</p>
+<h2 id="example">Example</h2>
+<pre><code class="python-repl">&gt;&gt;&gt; def my_text_parser(metrics: Metrics, out_file: str):
+&gt;&gt;&gt;     ...
+&gt;&gt;&gt; exec = plan_parse(&quot;my_data.txt&quot;, my_text_parser)
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def plan_parse(file: str, parse_file_func, out_dir: str = None):
+    &#34;&#34;&#34;Plan a parsing Execution
+
+    Sometimes its not required to have progbg run actual benchmarks, and you may
+    wish to compare to other frameworks which have auto runners. The plan_parse
+    function allows for the ability to capture data output from a text file and
+    integrate it into graphs.
+
+    Args:
+        file (str): File to be parsed and sent to the parse_file_func argument
+        parse_file_func (Function): Function to parse the data of the file argument
+        out_dir (str, optional): Directory to place parsed data
+
+    Returns:
+        Execution object
+
+    Example:
+        &gt;&gt;&gt; def my_text_parser(metrics: Metrics, out_file: str):
+        &gt;&gt;&gt;     ...
+        &gt;&gt;&gt; exec = plan_parse(&#34;my_data.txt&#34;, my_text_parser)
+    &#34;&#34;&#34;
+    _sb_executions.append(ParseExecution(file, out_dir, parse_file_func))
+    return _sb_executions[-1]</code></pre>
+</details>
+</dd>
+<dt id="progbg.core.registerbackend"><code class="name flex">
+<span>def <span class="ident">registerbackend</span></span>(<span>cls)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Register a class with ProgBG</p>
+<p>Args:
+cls (class): Class object to wrap and register</p>
+<h2 id="returns">Returns</h2>
+<p>Wrapped class object</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def registerbackend(cls):
+    &#34;&#34;&#34;Register a class with ProgBG
+
+    Args:
+    cls (class): Class object to wrap and register
+
+    Returns:
+        Wrapped class object
+    &#34;&#34;&#34;
+    if not hasattr(cls, &#34;start&#34;):
+        error(&#34;Backend requires the init function: {}&#34;.format(cls.__name__))
+
+    if not hasattr(cls, &#34;uninit&#34;):
+        error(&#34;Backend requires the uninit function: {}&#34;.format(cls.__name__))
+
+    _check_names(cls, cls.start)
+    _check_names(cls, cls.uninit)
+
+    def construct(self, consts={}, vars=[]):
+        self.vars = Variables(consts, vars)
+        self.name = cls.__name__
+
+    spec = inspect.getfullargspec(cls.start)
+    old = cls.start
+
+    def wrapped_start(**kwargs):
+        args = _get_args(spec, **kwargs)
+        return old(**args)
+
+    cls.__init__ = construct
+    cls.start = wrapped_start
+
+    _sb_registered_backend[cls.__name__.lower()] = cls
+
+    return cls</code></pre>
+</details>
+</dd>
+<dt id="progbg.core.registerbackend_sh"><code class="name flex">
+<span>def <span class="ident">registerbackend_sh</span></span>(<span>name: str, file_path: str)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def registerbackend_sh(name: str, file_path: str):
+    custom_backend = type(name, (object, ), {})
+
+    @staticmethod
+    def init():
+        shell = subprocess.Popen(
+            &#34;sh&#34;, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+        script = open(file_path, &#34;r&#34;).read()
+        script += &#34;\n&#34;
+        shell.stdin.write(str.encode(script))
+        shell.stdin.write(str.encode(&#34;init &gt; /dev/null\n&#34;))
+        shell.stdin.write(str.encode(&#34;env\n&#34;))
+        shell.stdin.close()
+        environment = dict()
+        for line in shell.stdout:
+            name, value = line.decode(&#39;ascii&#39;).strip().split(&#39;=&#39;, 1)
+            environment[name] = value
+        uniq = {k: environment[k] for k in set(environment) - set(os.environ)}
+        custom_backend.env = uniq
+        shell.wait()
+
+    custom_backend.init = init
+
+    @staticmethod
+    def uninit():
+        shell = subprocess.Popen(
+            &#34;sh&#34;, stdin=subprocess.PIPE, stdout=subprocess.PIPE, env=custom_backend.env)
+        script = open(file_path, &#34;r&#34;).read()
+        script += &#34;\n&#34;
+        shell.stdin.write(str.encode(script))
+        shell.stdin.write(str.encode(&#34;uninit\n&#34;))
+        shell.stdin.close()
+        shell.wait()
+
+    custom_backend.uninit = uninit
+
+    registerbackend(custom_backend)</code></pre>
+</details>
+</dd>
+<dt id="progbg.core.registerbenchmark"><code class="name flex">
+<span>def <span class="ident">registerbenchmark</span></span>(<span>cls)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Register a benchmark with ProgBG</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>cls</code></strong> :&ensp;<code>class</code></dt>
+<dd>Class to wrap and register</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Wrapped class object</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def registerbenchmark(cls):
+    &#34;&#34;&#34;Register a benchmark with ProgBG
+
+    Args:
+        cls (class): Class to wrap and register
+
+    Returns:
+        Wrapped class object
+    &#34;&#34;&#34;
+    if not hasattr(cls, &#34;run&#34;):
+        error(&#34;Benchmark requires the run function: {}&#34;.format(cls.__name__))
+
+    if not _has_required_args(cls.run):
+        error(&#34;Benchmark run needs 2 argument for output path: {}&#34;.format(cls.__name__))
+
+    _check_names(cls, cls.run, is_run=True)
+
+    def construct(self, consts={}, vars=[], iterations=1):
+        self.variables = Variables(consts, vars)
+        self.iterations = iterations
+        self.name = cls.__name__
+
+    cls.__init__ = construct
+
+    _sb_registered_benchmarks[cls.__name__.lower()] = cls
+
+    return cls</code></pre>
+</details>
+</dd>
+<dt id="progbg.core.registerbenchmark_sh"><code class="name flex">
+<span>def <span class="ident">registerbenchmark_sh</span></span>(<span>name: str, file_path: str)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def registerbenchmark_sh(name: str, file_path: str):
+    custom_backend = type(name, (object, ), {})
+
+    @staticmethod
+    def run(backend, out_file):
+        out = open(out_file, &#39;w&#39;)
+        shell = subprocess.Popen(&#34;sh&#34;, stdin=subprocess.PIPE, stdout=out)
+        script = open(file_path, &#34;r&#34;).read()
+        script += &#34;\n&#34;
+        shell.stdin.write(str.encode(script))
+        script = open(file_path, &#34;r&#34;).read()
+        run_str = &#34;run\n&#34;.format(i)
+        shell.stdin.write(str.encode(run_str))
+        shell.stdin.close()
+        shell.wait()
+
+    custom_backend.run = run
+    registerbenchmark(custom_backend)</code></pre>
+</details>
+</dd>
+</dl>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="progbg.core.Metrics"><code class="flex name class">
+<span>class <span class="ident">Metrics</span></span>
+</code></dt>
+<dd>
+<div class="desc"><p>Metrics collection object</p>
+<p>This object is given to executions to allow for users to specify what data
+must be kept. The main functio that should be used by users is the add_metric
+function, which simply appends data points to a list to be used to calculate
+means and standard deviation later</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class Metrics:
+    &#34;&#34;&#34;Metrics collection object
+
+    This object is given to executions to allow for users to specify what data
+    must be kept. The main functio that should be used by users is the add_metric
+    function, which simply appends data points to a list to be used to calculate
+    means and standard deviation later
+    &#34;&#34;&#34;
+    def __init__(self):
+        self._vars = dict()
+        self._consts = dict()
+
+    def add_metric(self, key, val):
+        &#34;&#34;&#34;Add a data point to a metric key
+
+        Args:
+            key (str): Key to add value to
+            val (int, float): value to append to a list
+
+        Example:
+            Suppose we have a parser we wish to use. This parser takes
+            both a metrics object and a file path.
+
+            &gt;&gt;&gt; def my_parser(metrics: Metrics, out: str):
+            &gt;&gt;&gt;     with open(out, &#39;r&#39;) as f:
+            &gt;&gt;&gt;         mydata = f.read()
+            &gt;&gt;&gt;         val = find_specific_value(mydata)
+            &gt;&gt;&gt;         metrics.add_metric(&#39;my-stored-val&#39;, val)
+        &#34;&#34;&#34;
+        if key not in self._vars:
+            self._vars[key] = [val]
+        else:
+            self._vars[key].append(val)
+
+    def __getitem__(self, key):
+        if key in self._vars:
+            return self._vars[key]
+
+        return self._consts[key]
+
+    def add_constant(self, key, val):
+        &#34;&#34;&#34;Add a constant to a metric object
+
+        Args:
+            key (str): Key for constant
+            val (obj): Value of this constant
+        &#34;&#34;&#34;
+        self._consts[key] = val
+
+    def _combine(self, other: Dict):
+        for key, val in other._vars.items():
+            if key in self._vars:
+                self._vars[key].append(val)
+            else:
+                self._vars[key] = val
+
+    def get_stats(self):
+        &#34;&#34;&#34;Returns the metrics object
+
+        Will return the current metrics of this object. Each associated
+        key will have its mean and standard deviation calculated.  Standard deviation
+        is stored within a &#34;_std&#34; key.
+
+        For example. If I had some metrics with associated key &#34;my-metric&#34;. The returned
+        dictionary would store the mean at key &#34;my-metrics&#34;, and store standard deviation
+        at key &#34;my-metrics_std&#34;.  This allows users to also manually set standard deviation
+        of objects if needed. For example when using then `plan_parse` style executions.
+
+        Returns:
+            dict
+        &#34;&#34;&#34;
+        obj = dict()
+        for key, val in self._vars.items():
+            obj[key] = np.mean(val)
+            obj[key + &#34;_std&#34;] = np.std(val)
+        for key, val in self._consts.items():
+            obj[key] = val
+
+        return obj
+
+    def __repr__(self):
+        obj = self.get_stats()
+        return pformat(obj)</code></pre>
+</details>
+<h3>Methods</h3>
+<dl>
+<dt id="progbg.core.Metrics.add_constant"><code class="name flex">
+<span>def <span class="ident">add_constant</span></span>(<span>self, key, val)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Add a constant to a metric object</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>key</code></strong> :&ensp;<code>str</code></dt>
+<dd>Key for constant</dd>
+<dt><strong><code>val</code></strong> :&ensp;<code>obj</code></dt>
+<dd>Value of this constant</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def add_constant(self, key, val):
+    &#34;&#34;&#34;Add a constant to a metric object
+
+    Args:
+        key (str): Key for constant
+        val (obj): Value of this constant
+    &#34;&#34;&#34;
+    self._consts[key] = val</code></pre>
+</details>
+</dd>
+<dt id="progbg.core.Metrics.add_metric"><code class="name flex">
+<span>def <span class="ident">add_metric</span></span>(<span>self, key, val)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Add a data point to a metric key</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>key</code></strong> :&ensp;<code>str</code></dt>
+<dd>Key to add value to</dd>
+<dt><strong><code>val</code></strong> :&ensp;<code>int, float</code></dt>
+<dd>value to append to a list</dd>
+</dl>
+<h2 id="example">Example</h2>
+<p>Suppose we have a parser we wish to use. This parser takes
+both a metrics object and a file path.</p>
+<pre><code class="python-repl">&gt;&gt;&gt; def my_parser(metrics: Metrics, out: str):
+&gt;&gt;&gt;     with open(out, 'r') as f:
+&gt;&gt;&gt;         mydata = f.read()
+&gt;&gt;&gt;         val = find_specific_value(mydata)
+&gt;&gt;&gt;         metrics.add_metric('my-stored-val', val)
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def add_metric(self, key, val):
+    &#34;&#34;&#34;Add a data point to a metric key
+
+    Args:
+        key (str): Key to add value to
+        val (int, float): value to append to a list
+
+    Example:
+        Suppose we have a parser we wish to use. This parser takes
+        both a metrics object and a file path.
+
+        &gt;&gt;&gt; def my_parser(metrics: Metrics, out: str):
+        &gt;&gt;&gt;     with open(out, &#39;r&#39;) as f:
+        &gt;&gt;&gt;         mydata = f.read()
+        &gt;&gt;&gt;         val = find_specific_value(mydata)
+        &gt;&gt;&gt;         metrics.add_metric(&#39;my-stored-val&#39;, val)
+    &#34;&#34;&#34;
+    if key not in self._vars:
+        self._vars[key] = [val]
+    else:
+        self._vars[key].append(val)</code></pre>
+</details>
+</dd>
+<dt id="progbg.core.Metrics.get_stats"><code class="name flex">
+<span>def <span class="ident">get_stats</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns the metrics object</p>
+<p>Will return the current metrics of this object. Each associated
+key will have its mean and standard deviation calculated.
+Standard deviation
+is stored within a "_std" key.</p>
+<p>For example. If I had some metrics with associated key "my-metric". The returned
+dictionary would store the mean at key "my-metrics", and store standard deviation
+at key "my-metrics_std".
+This allows users to also manually set standard deviation
+of objects if needed. For example when using then <code><a title="progbg.core.plan_parse" href="#progbg.core.plan_parse">plan_parse()</a></code> style executions.</p>
+<h2 id="returns">Returns</h2>
+<p>dict</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_stats(self):
+    &#34;&#34;&#34;Returns the metrics object
+
+    Will return the current metrics of this object. Each associated
+    key will have its mean and standard deviation calculated.  Standard deviation
+    is stored within a &#34;_std&#34; key.
+
+    For example. If I had some metrics with associated key &#34;my-metric&#34;. The returned
+    dictionary would store the mean at key &#34;my-metrics&#34;, and store standard deviation
+    at key &#34;my-metrics_std&#34;.  This allows users to also manually set standard deviation
+    of objects if needed. For example when using then `plan_parse` style executions.
+
+    Returns:
+        dict
+    &#34;&#34;&#34;
+    obj = dict()
+    for key, val in self._vars.items():
+        obj[key] = np.mean(val)
+        obj[key + &#34;_std&#34;] = np.std(val)
+    for key, val in self._consts.items():
+        obj[key] = val
+
+    return obj</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="progbg" href="index.html">progbg</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="progbg.core.compose_backends" href="#progbg.core.compose_backends">compose_backends</a></code></li>
+<li><code><a title="progbg.core.default_formatter" href="#progbg.core.default_formatter">default_formatter</a></code></li>
+<li><code><a title="progbg.core.execute_plan" href="#progbg.core.execute_plan">execute_plan</a></code></li>
+<li><code><a title="progbg.core.plan_execution" href="#progbg.core.plan_execution">plan_execution</a></code></li>
+<li><code><a title="progbg.core.plan_figure" href="#progbg.core.plan_figure">plan_figure</a></code></li>
+<li><code><a title="progbg.core.plan_graph" href="#progbg.core.plan_graph">plan_graph</a></code></li>
+<li><code><a title="progbg.core.plan_parse" href="#progbg.core.plan_parse">plan_parse</a></code></li>
+<li><code><a title="progbg.core.registerbackend" href="#progbg.core.registerbackend">registerbackend</a></code></li>
+<li><code><a title="progbg.core.registerbackend_sh" href="#progbg.core.registerbackend_sh">registerbackend_sh</a></code></li>
+<li><code><a title="progbg.core.registerbenchmark" href="#progbg.core.registerbenchmark">registerbenchmark</a></code></li>
+<li><code><a title="progbg.core.registerbenchmark_sh" href="#progbg.core.registerbenchmark_sh">registerbenchmark_sh</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="progbg.core.Metrics" href="#progbg.core.Metrics">Metrics</a></code></h4>
+<ul class="">
+<li><code><a title="progbg.core.Metrics.add_constant" href="#progbg.core.Metrics.add_constant">add_constant</a></code></li>
+<li><code><a title="progbg.core.Metrics.add_metric" href="#progbg.core.Metrics.add_metric">add_metric</a></code></li>
+<li><code><a title="progbg.core.Metrics.get_stats" href="#progbg.core.Metrics.get_stats">get_stats</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.9.2</a>.</p>
+</footer>
+</body>
+</html>
