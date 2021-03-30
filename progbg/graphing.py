@@ -168,6 +168,9 @@ def _calculate_ticks(group_len: int, width: float):
         offset += width
     return temp
 
+def default_kwargs(ax, kwargs):
+    if "title" in kwargs:
+        ax.set_title(kwargs.get("title"))
 
 def filter(metrics: List, restrict_dict: Dict):
     """Filter a list of metrics given a restriction dict
@@ -195,7 +198,7 @@ class BarGraph:
         >>> exec = plan_execution(...)
         >>> bar1 = Bar(exec, "stat-one", label="Custom Stat")
         >>> bar2 = Bar(exec, "stat-two", label="Custom Stat Two")
-        >>> plan_graph("Graph Title - Grouped",
+        >>> plan_graph(
         >>>     BarGraph([[bar1, bar2]],
         >>>         group_labels=["These a grouped!"],
         >>>         out="custom.svg"
@@ -205,7 +208,7 @@ class BarGraph:
         would seperate bar1 and bar2. "stat-one", and "stat-two", are both values that would have been added to the
         associated `core.Metrics` object which is passed through the parser functions provided by the user.
 
-        >>> plan_graph("Graph Title - Seperate",
+        >>> plan_graph(
         >>>     BarGraph([[bar1], [bar2]],
         >>>         group_labels=["Group 1!", "Group 2!"],
         >>>         out="custom.svg"
@@ -217,16 +220,21 @@ class BarGraph:
             workloads: List,
             group_labels,
             formatter=None,
-            restrict_on=None,
-            width=0.3,
-            out: str = None):
+            restrict_on= None,
+            out: str = None,
+            **kwargs):
 
         self.workloads = workloads
         self.out = out
         self.aggregation = None
         self.restrict_on = restrict_on
-        self.width = width
         self.gl = group_labels
+        self.kwargs = kwargs
+
+        if "width" not in kwargs:
+            self.width = 0.3
+        else:
+            self.width = kwargs.get("width")
 
         assert len(self.gl) == len(self.workloads)
 
@@ -261,17 +269,16 @@ class BarGraph:
         df = pd.DataFrame(matrix, columns=column_space, index=[
                           b.workload.name for b in flatten])
 
-        width = self.width
-        df.plot(kind="bar", stacked=True, width=width, ax=ax)
+        df.plot(kind="bar", stacked=True, width=self.width, ax=ax)
 
         h, _ = ax.get_legend_handles_labels()
         x_ticks = []
         children = h[0].get_children()
         x_tick_at = children[0].get_x()
-        x_tick_at_last = children[-1].get_x() + width
+        x_tick_at_last = children[-1].get_x() + self.width
         distance = x_tick_at_last - x_tick_at
         inter_bar = 0.01
-        inter_space = (distance - ((width + inter_bar) *
+        inter_space = (distance - ((self.width + inter_bar) *
                                    len(flatten))) / (len(self.workloads) + 1)
         # For some reason the first bar starts at a negative X co-ordinate, so dont really
         # know how the coordinate system in matplot lib currently works and docs say otherwise.  So
@@ -281,19 +288,23 @@ class BarGraph:
         for group in self.workloads:
             x_ticks.append(x_tick_at)
             for wl in group[1:]:
-                x_ticks.append(x_tick_at + width + inter_bar)
-                x_tick_at += width + inter_bar
-            x_tick_at += width + inter_space
+                x_ticks.append(x_tick_at + self.width + inter_bar)
+                x_tick_at += self.width + inter_bar
+            x_tick_at += self.width + inter_space
 
-        if (x_ticks[-1] + width / 2) > x_tick_at_last:
+        if (x_ticks[-1] + self.width / 2) > x_tick_at_last:
             self._print("Width param is too large, please reduce")
             return
 
         for x in range(0, len(column_space)):
             for i, child in enumerate(h[x].get_children()):
                 child.set_x(x_ticks[i])
-        ax.set_xticks([x + (width / 2) for x in x_ticks])
+        ax.set_xticks([x + (self.width / 2) for x in x_ticks])
         ax.set_xticklabels([b.label for b in flatten])
+        self._handle_kwargs(ax)
+
+    def _handle_kwargs(self, ax):
+        default_kwargs(ax, self.kwargs)
 
     def _print(self, strn: str, silent) -> None:
         """Pretty printer for BarGraph"""
@@ -412,34 +423,46 @@ class CustomGraph:
             self.aggregation[work] = aggregate_bench(benchmark, self.filter)
         self.graph_func(ax, self.aggregation)
 
+class Line:
+    def __init__(self, workload, 
+            value: str, 
+            label: str = None,
+            linestyle = '-',
+            linewidth = 1):
+        if label:
+            self.label = label
+        else:
+            self.label = value
+        self.value = value
+        self.workload = workload
+        self.linestyle = linestyle
+        self.linewidth = linewidth
+
 
 class LineGraph:
     """progbg Line Graph
 
     Args:
-        x (str): attribute you wish to plot its change
-        y (str): attribute you wish to see respond to the change in x
-        workloads (List): Workloads that the line graph will use in the WRK:BCK1/BCK2 format
+        lines (List[Line]): Workloads that the line graph will use in the WRK:BCK1/BCK2 format
+        x (str): Change over which value
         formatter (Function, optional): Formatter to be used on the graph once the graph is complete
         out (str, optional): Optional name for file the user wishes to save the graph too.
     """
 
-    def __init__(
-            self,
+    def __init__(self,
+            lines: List[str],
             x: str,
-            y: str,
-            workloads: List[str],
-            restrict: Dict,
-            formatter: Dict = None,
-            out: str = None):
+            restrict_on: Dict = None,
+            formatter = None,
+            out: str = None,
+            **kwargs):
 
         self.formatter = None
+        self.restrict_on = restrict_on
         self.x_name = x
-        self.y_name = y
-        self.workloads = workloads
+        self.lines = lines 
         self.out = out
-        self.restrict = restrict
-        self.aggregation = None
+        self.kwargs = kwargs
 
     def _print(self, strn: str, silent) -> None:
         """Pretty printer for LineGraph"""
@@ -448,19 +471,19 @@ class LineGraph:
 
         print("\033[1;34m[{}]:\033[0m {}".format(self.out, strn))
 
+    def _handle_kwargs(self, ax):
+        default_kwargs(ax, self.kwargs)
+
     def _graph(self, ax, silent=False):
         """ Create the line graph
         Arguments:
             ax: Axes object to attach data too
         """
         self._print("Graphing", silent)
-        self.aggregation = dict()
-        for work, benchmark in _retrieve_relavent_data(self.workloads, self.restrict).items():
-            check_one_varying(benchmark, extras=[self.x_name])
-            x, y, ystd, self.aggregation[work] = retrieve_axes(
-                benchmark, self.x_name, self.y_name)
-            vals = sorted(list(zip(x, y)), key=lambda x: x[0])
-            x, y = zip(*vals)
-            ax.plot(x, y, linestyle='-', linewidth=1, label=work)
-
-        ax.legend()
+        for line in self.lines:
+            metrics = filter(line.workload._cached, self.restrict_on)
+            metrics.sort(key=lambda x: x[self.x_name])
+            x = [ m.get_stats()[self.x_name] for m in metrics ]
+            y = [ m.get_stats()[line.value] for m in metrics ]
+            ax.plot(x, y, linestyle=line.linestyle, linewidth=line.linewidth, label=line.label)
+        self._handle_kwargs(ax)

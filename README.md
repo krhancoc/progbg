@@ -7,9 +7,7 @@ Identifying bottlenecks and problems within a system is essential when developin
 able to quickly produce simple graphs helps see these bottlenecks more clearly as well as possibly see degenerative issues within a system.
 `progbg` is a simple framework that exposes a planning API to allow you to plan execution of
 your benchmarks through the registering of workloads and backends. Data produced by these classes are parsed to produce data that can be used by graphs and figures. 
-`progbg` utilizes [`matplotlib`](https://matplotlib.org) uses for its graphing library and tries to reduce the amount of work
-needed to create custom graphs.
-
+`progbg` utilizes [`matplotlib`](https://matplotlib.org) for its graphing library.
 
 More information and docs can be found [here](https://krhancoc.github.io/progbg/)
 

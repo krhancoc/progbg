@@ -6,15 +6,15 @@
 {% block content %}
 
 <h2> Graphs </h1>
-{% for name, graph in graphs.items() %}
-<h3>{{name}}</h1>
-<a href="data/{{name}}"><img src="graphs/{{graph.out}}"></a>
+{% for graph in graphs %}
+<h3>{{graph.out}}</h1>
+<a href="data/{{loop.index - 1}}"><img src="graphs/{{graph.out}}"></a>
 {% endfor %}
 
 
 <h2> Figures </h1>
-{% for name, graph in figures.items() %}
-<h3>{{name}}</h1>
+{% for graph in figures %}
+<h3>{{graph.out}}</h1>
 <img src="graphs/{{graph.out}}">
 {% endfor %}
 
