@@ -91,7 +91,8 @@ graph1 = sb.plan_graph(
             },
             width = 0.5,
             out = "test.svg",
-            title = "My Custom Graph"
+            title = "My Custom Graph",
+            style = "hatch_a"
         )
 )
 
@@ -109,7 +110,8 @@ graph2 = sb.plan_graph(
                 "pass_me_in": 0,
             },
             out = "line.svg",
-            title = "My Lines"
+            title = "My Lines",
+            style = "color_b"
         )
 )
 line1 = sb.Line(exec, "low", linestyle='dotted')

@@ -6,8 +6,10 @@ This module handles the various graph classes that progbg supports
 
 Current Graphs:
 `BarGraph`: Displays information as a bar, bars can be grouped or stacked. Users supply bargraphs with `Bar` objects.
+
 `LineGraph`: Displays information change over a line, These are given to users as with `Line` objects. LineGraphs
 can be default style or CDF (Cumulative Distrubution Function).
+
 """
 from typing import List, Dict
 from pprint import pformat
@@ -23,41 +25,8 @@ from .globals import _sb_executions
 from .subr import retrieve_axes, check_one_varying
 from .subr import aggregate_bench, aggregate_list
 from .util import Backend, retrieve_obj, error
+from .style import get_style
 
-mpl.use("pgf")
-
-TYPES = ['r--', 'bs', 'g^', 'p*']
-COLORS = ['teal', 'limegreen', 'mediumorchid',
-          'crimson', 'peru', 'tomato', 'silver', 'lightsalmon']
-PATTERNS = ["**", "++", "//", "xx", "oo"]
-PATTERNS = ["\\\\", "..", "//", "++", "OO"]
-ALTERNATE = [
-    {
-        "hatch": "//",
-        "color": "white",
-    },
-    {"color": "grey"},
-    {
-        "color": "white",
-        #            "hatch": "..",
-        #            "edgecolor": "teal"
-    },
-    {"color": "darkgrey"}]
-
-pgf_with_pdflatex = {
-    "font.family": "serif",
-    "font.size": 10,
-    "axes.titlesize": 10,
-    "axes.labelsize": 10,
-    "xtick.labelsize": 9,
-    "ytick.labelsize": 9,
-    "legend.fontsize": 9,
-    "figure.titlesize": 10,
-    "pgf.texsystem": "pdflatex",
-    "pgf.rcfonts": False
-}
-
-mpl.rcParams.update(pgf_with_pdflatex)
 
 
 def _is_good(benchmark, restriction):
@@ -199,6 +168,7 @@ class BarGraph:
         formatter (Function, optional): Function object for post customization of graphs.
         width (float): Width of each bar
         out (Path): Output file for this single graph to be saved to
+        style (str): Style of the graph (default: color_a)
         kwargs (optional): Passed to matplotlib `Axes.plot` function or optional named params below.
 
     Progbg optional kwargs:
@@ -234,6 +204,7 @@ class BarGraph:
             formatter=None,
             restrict_on=None,
             out: str = None,
+            style = "color_a",
             **kwargs):
 
         self.workloads = workloads
@@ -242,6 +213,7 @@ class BarGraph:
         self.restrict_on = restrict_on
         self.gl = group_labels
         self.kwargs = kwargs
+        self.style = style
 
         assert len(self.gl) == len(self.workloads)
 
@@ -287,7 +259,7 @@ class BarGraph:
 
         width = default_kwargs['width']
 
-        h, _ = ax.get_legend_handles_labels()
+        h, l = ax.get_legend_handles_labels()
         x_ticks = []
         children = h[0].get_children()
         x_tick_at = children[0].get_x()
@@ -312,9 +284,22 @@ class BarGraph:
             self._print("Width param is too large, please reduce")
             return
 
+        # This is where using the pandas stuff might hurt us in the long run
+        # Might just want to do this all manually in the future as now we have to
+        # manually set our Patch objects when using the pandas dataframe plot method
+        style = iter(get_style(self.style))
         for x in range(0, len(column_space)):
+            val = next(style)
             for i, child in enumerate(h[x].get_children()):
                 child.set_x(x_ticks[i])
+                if "hatch" in val:
+                    child.set_fill(False)
+                    child.set_hatch(val["hatch"])
+                else:
+                    child.set_fill(True)
+                    child.set_color(val["color"])
+
+        ax.legend(h, l)
         ax.set_xticks([x + (width / 2) for x in x_ticks])
         ax.set_xticklabels([b.label for b in flatten], rotation=-50, ha='left')
         self._handle_kwargs(ax)
@@ -522,6 +507,7 @@ class LineGraph:
                  restrict_on: Dict = None,
                  formatter=None,
                  type="default",
+                 style="color_a",
                  out: str = None,
                  **kwargs):
 
@@ -531,6 +517,7 @@ class LineGraph:
         self.lines = lines
         self.out = out
         self.type = type
+        self.style = style
         self.kwargs = kwargs
 
     def _print(self, strn: str, silent) -> None:
@@ -549,6 +536,7 @@ class LineGraph:
             ax: Axes object to attach data too
         """
         self._print("Graphing", silent)
+        style = iter(get_style(self.style))
         for line in self.lines:
             metrics = filter(line.workload._cached, self.restrict_on)
             metrics.sort(key=lambda x: x[self.x_name])
@@ -559,9 +547,9 @@ class LineGraph:
                 count, bin_counts = np.histogram(y, bins=10)
                 pdf = count / sum(count)
                 cdf = np.cumsum(pdf)
-                ax.plot(bin_counts[1:], cdf, **line.line_style)
+                ax.plot(bin_counts[1:], cdf, **line.line_style, **next(style))
             else:
                 x = [m.get_stats()[self.x_name] for m in metrics]
                 y = [m.get_stats()[line.value] for m in metrics]
-                ax.plot(x, y, **line.line_style)
+                ax.plot(x, y, **line.line_style, **next(style))
         self._handle_kwargs(ax)
