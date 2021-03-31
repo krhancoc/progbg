@@ -4,23 +4,23 @@
 {% endblock %}
 
 {% block content %}
-{% for exec_name, aggregate in graph.aggregation.items() %}
+{% for line in graph.lines %}
 <div>
-    <h3>{{exec_name}}</h3>
-    {% for k, vals in aggregate.items() %}
-    <table>
-        <h4>{{k}}</h4>
-        <tr>
-            <td>Key Name</td>
-            <td>Value Mean</td>
-            <td>Value STD</td>
-        </tr>
-        {% for key_name, attr in vals.items() %}
-        <tr>
-            <td>{{key_name}}</td>
-            <td>{{attr[0]}}</td>
-            <td>{{attr[1]}}</td>
-        </tr>
+    <h3>{{line.workload.name}}</h3>
+    {% for run in line.workload._cached %}
+        {% for run in line.workload._cached %}
+            <table>
+                <h4>{{k}}</h4>
+                <tr>
+                    <td>Key Name</td>
+                    <td>Value</td>
+                </tr>
+                {% for key_name, attr in run.get_stats().items() %}
+                <tr>
+                    <td>{{key_name}}</td>
+                    <td>{{attr}}</td>
+                </tr>
+                {% endfor %}
         {% endfor %}
     </table>
     {% endfor %}

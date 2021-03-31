@@ -662,13 +662,12 @@ def plan_execution(runner,
     return _sb_executions[-1]
 
 
-def plan_graph(title: str, graphobj):
+def plan_graph(graphobj):
     &#34;&#34;&#34;Plan a graph object
     Takes a graph object (LineGraph, etc) and ties the a name to it to be
     used by figures
 
     Args:
-        title (str): Title of the graph object
         graphobj (obj): Specified graph to use
 
 
@@ -678,7 +677,6 @@ def plan_graph(title: str, graphobj):
         &gt;&gt;&gt; bf = BarFactory(exec1)
         &gt;&gt;&gt; bf_two = BarFactory(exec2)
         &gt;&gt;&gt; graph = plan_graph(
-        &gt;&gt;&gt;             &#34;My Custom Graph&#34;,
         &gt;&gt;&gt;             BarGraph(
         &gt;&gt;&gt;                 [
         &gt;&gt;&gt;                     [bf(&#34;data-one&#34;), bf_two(&#34;data-one&#34;)],
@@ -691,10 +689,8 @@ def plan_graph(title: str, graphobj):
         of the Graph. See `graphing.BarGraph`, `graphing.LineGraph`, 
         `graphing.CustomGraph`, `graphing.Histogram` etc.
     &#34;&#34;&#34;
-    if title in _sb_graphs:
-        error(&#34;Graph already defined: {}&#34;.format(title))
-
-    _sb_graphs[title] = graphobj
+    _sb_graphs.append(graphobj)
+    return _sb_graphs[-1]
 
 
 def _is_static(func):
@@ -768,10 +764,10 @@ def registerbackend(cls):
         Wrapped class object
     &#34;&#34;&#34;
     if not hasattr(cls, &#34;start&#34;):
-        error(&#34;Backend requires the init function: {}&#34;.format(cls.__name__))
+        error(&#34;The following Backend is missing the &#39;start&#39; function: {}&#34;.format(cls.__name__))
 
     if not hasattr(cls, &#34;uninit&#34;):
-        error(&#34;Backend requires the uninit function: {}&#34;.format(cls.__name__))
+        error(&#34;The following Backend is missing the &#39;uninit&#39; function: {}&#34;.format(cls.__name__))
 
     _check_names(cls, cls.start)
     _check_names(cls, cls.uninit)
@@ -849,13 +845,12 @@ class Figure:
     &#34;&#34;&#34;Create figure given a set of graphs, for more information see plan_figure documentation&#34;&#34;&#34;
 
     def __init__(self,
-                 name: str,
-                 graphs: List[List[str]],
+                 title: str,
+                 graphs: List,
                  formatter,
                  out: str):
-        check_formatter(formatter)
 
-        self.name = name
+        self.title = title
         self.graphs = graphs
         self.formatter = formatter
         self.out = out
@@ -872,22 +867,23 @@ class Figure:
         fig, axes = plt.subplots(ncols=w, nrows=h, squeeze=False)
         for y in range(0, h):
             for x in range(0, w):
-                graph = _sb_graphs[self.graphs[y][x]]
+                graph = self.graphs[y][x]
                 try:
-                    graph.graph(axes[y][x], silent=True)
+                    graph._graph(axes[y][x], silent=True)
                 except Exception as err:
-                    error(&#34;Problem with graph {}: {}&#34;.format(self.name, err))
+                    error(&#34;Problem with graph {}: {}&#34;.format(self.title, err))
 
         _format_fig(fig, axes, self.formatter)
+        fig.tight_layout()
 
         out = os.path.join(GRAPHS_DIR, self.out)
-        plt.savefig(out, bbox_inches=&#34;tight&#34;, pad_inches=0)
+        plt.savefig(out)
         if not out.endswith(&#34;.svg&#34;):
             out = &#34;.&#34;.join(out.split(&#34;.&#34;)[:-1]) + &#34;.svg&#34;
-            plt.savefig(out, bbox_inches=&#34;tight&#34;, pad_inches=0)
+            plt.savefig(out)
 __pdoc__[&#34;Figure&#34;] = False
 
-def plan_figure(title: str, graph_layout: List[List[str]], formatter, out: str):
+def plan_figure(title: str, graph_layout: List[List[str]],  out: str, formatter = None):
     &#34;&#34;&#34;Plan a figure given a set of graphs
     Arguments:
         title (str): Title of the figure
@@ -916,12 +912,9 @@ def plan_figure(title: str, graph_layout: List[List[str]], formatter, out: str):
          Graph1  Graph2 
 
          Graph3  Graph4 
-
     &#34;&#34;&#34;
-    if name in _sb_figures:
-        error(&#34;Figure already defined: {}&#34;.format(name))
-
-    _sb_figures[title] = Figure(title, graph_layout, formatter, out)
+    _sb_figures.append(Figure(title, graph_layout, formatter, out))
+    return _sb_figures[-1]
 
 
 def execute_plan(plan: str, args):
@@ -949,20 +942,20 @@ def execute_plan(plan: str, args):
     except FileExistsError:
         pass
 
-    for graph in _sb_graphs.values():
+    for graph in _sb_graphs:
         if len(graph.out):
             fig, axes = plt.subplots()
             fig.set_size_inches(3.25, 3.25)
             graph._graph(axes)
+            fig.tight_layout()
             _format_fig(fig, axes, graph.formatter)
-            for curout in graph.out:
-                out = os.path.join(GRAPHS_DIR, curout)
-                try:
-                    plt.savefig(out)
-                except:
-                    print(&#34;Problem with output {}&#34;.format(out))
+            out = os.path.join(GRAPHS_DIR, graph.out)
+            try:
+                plt.savefig(out)
+            except:
+                print(&#34;Problem with output {}&#34;.format(out))
 
-    for fig in _sb_figures.values():
+    for fig in _sb_figures:
         fig.create()
 
     return globals()</code></pre>
@@ -1103,20 +1096,20 @@ which can be used when defining executions in <code><a title="progbg.core.plan_e
     except FileExistsError:
         pass
 
-    for graph in _sb_graphs.values():
+    for graph in _sb_graphs:
         if len(graph.out):
             fig, axes = plt.subplots()
             fig.set_size_inches(3.25, 3.25)
             graph._graph(axes)
+            fig.tight_layout()
             _format_fig(fig, axes, graph.formatter)
-            for curout in graph.out:
-                out = os.path.join(GRAPHS_DIR, curout)
-                try:
-                    plt.savefig(out)
-                except:
-                    print(&#34;Problem with output {}&#34;.format(out))
+            out = os.path.join(GRAPHS_DIR, graph.out)
+            try:
+                plt.savefig(out)
+            except:
+                print(&#34;Problem with output {}&#34;.format(out))
 
-    for fig in _sb_figures.values():
+    for fig in _sb_figures:
         fig.create()
 
     return globals()</code></pre>
@@ -1252,7 +1245,7 @@ constructor. Like so:</p>
 </details>
 </dd>
 <dt id="progbg.core.plan_figure"><code class="name flex">
-<span>def <span class="ident">plan_figure</span></span>(<span>title: str, graph_layout: List[List[str]], formatter, out: str)</span>
+<span>def <span class="ident">plan_figure</span></span>(<span>title: str, graph_layout: List[List[str]], out: str, formatter=None)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Plan a figure given a set of graphs</p>
@@ -1287,7 +1280,7 @@ Graph4</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def plan_figure(title: str, graph_layout: List[List[str]], formatter, out: str):
+<pre><code class="python">def plan_figure(title: str, graph_layout: List[List[str]],  out: str, formatter = None):
     &#34;&#34;&#34;Plan a figure given a set of graphs
     Arguments:
         title (str): Title of the figure
@@ -1316,16 +1309,13 @@ Graph4</p></div>
          Graph1  Graph2 
 
          Graph3  Graph4 
-
     &#34;&#34;&#34;
-    if name in _sb_figures:
-        error(&#34;Figure already defined: {}&#34;.format(name))
-
-    _sb_figures[title] = Figure(title, graph_layout, formatter, out)</code></pre>
+    _sb_figures.append(Figure(title, graph_layout, formatter, out))
+    return _sb_figures[-1]</code></pre>
 </details>
 </dd>
 <dt id="progbg.core.plan_graph"><code class="name flex">
-<span>def <span class="ident">plan_graph</span></span>(<span>title: str, graphobj)</span>
+<span>def <span class="ident">plan_graph</span></span>(<span>graphobj)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Plan a graph object
@@ -1333,8 +1323,6 @@ Takes a graph object (LineGraph, etc) and ties the a name to it to be
 used by figures</p>
 <h2 id="args">Args</h2>
 <dl>
-<dt><strong><code>title</code></strong> :&ensp;<code>str</code></dt>
-<dd>Title of the graph object</dd>
 <dt><strong><code>graphobj</code></strong> :&ensp;<code>obj</code></dt>
 <dd>Specified graph to use</dd>
 </dl>
@@ -1344,7 +1332,6 @@ used by figures</p>
 &gt;&gt;&gt; bf = BarFactory(exec1)
 &gt;&gt;&gt; bf_two = BarFactory(exec2)
 &gt;&gt;&gt; graph = plan_graph(
-&gt;&gt;&gt;             &quot;My Custom Graph&quot;,
 &gt;&gt;&gt;             BarGraph(
 &gt;&gt;&gt;                 [
 &gt;&gt;&gt;                     [bf(&quot;data-one&quot;), bf_two(&quot;data-one&quot;)],
@@ -1361,13 +1348,12 @@ of the Graph. See <code>graphing.BarGraph</code>, <code>graphing.LineGraph</code
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def plan_graph(title: str, graphobj):
+<pre><code class="python">def plan_graph(graphobj):
     &#34;&#34;&#34;Plan a graph object
     Takes a graph object (LineGraph, etc) and ties the a name to it to be
     used by figures
 
     Args:
-        title (str): Title of the graph object
         graphobj (obj): Specified graph to use
 
 
@@ -1377,7 +1363,6 @@ of the Graph. See <code>graphing.BarGraph</code>, <code>graphing.LineGraph</code
         &gt;&gt;&gt; bf = BarFactory(exec1)
         &gt;&gt;&gt; bf_two = BarFactory(exec2)
         &gt;&gt;&gt; graph = plan_graph(
-        &gt;&gt;&gt;             &#34;My Custom Graph&#34;,
         &gt;&gt;&gt;             BarGraph(
         &gt;&gt;&gt;                 [
         &gt;&gt;&gt;                     [bf(&#34;data-one&#34;), bf_two(&#34;data-one&#34;)],
@@ -1390,10 +1375,8 @@ of the Graph. See <code>graphing.BarGraph</code>, <code>graphing.LineGraph</code
         of the Graph. See `graphing.BarGraph`, `graphing.LineGraph`, 
         `graphing.CustomGraph`, `graphing.Histogram` etc.
     &#34;&#34;&#34;
-    if title in _sb_graphs:
-        error(&#34;Graph already defined: {}&#34;.format(title))
-
-    _sb_graphs[title] = graphobj</code></pre>
+    _sb_graphs.append(graphobj)
+    return _sb_graphs[-1]</code></pre>
 </details>
 </dd>
 <dt id="progbg.core.plan_parse"><code class="name flex">
@@ -1473,10 +1456,10 @@ cls (class): Class object to wrap and register</p>
         Wrapped class object
     &#34;&#34;&#34;
     if not hasattr(cls, &#34;start&#34;):
-        error(&#34;Backend requires the init function: {}&#34;.format(cls.__name__))
+        error(&#34;The following Backend is missing the &#39;start&#39; function: {}&#34;.format(cls.__name__))
 
     if not hasattr(cls, &#34;uninit&#34;):
-        error(&#34;Backend requires the uninit function: {}&#34;.format(cls.__name__))
+        error(&#34;The following Backend is missing the &#39;uninit&#39; function: {}&#34;.format(cls.__name__))
 
     _check_names(cls, cls.start)
     _check_names(cls, cls.uninit)

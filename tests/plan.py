@@ -77,7 +77,7 @@ exec = sb.plan_execution(
 exec2 = sb.plan_parse("tests/test.txt", text_parser)
 
 bf = sb.BarFactory(exec)
-sb.plan_graph("Values and Jazz",
+graph1 = sb.plan_graph(
         sb.BarGraph(
             [
                 [bf("low", "custom-label1"), bf(["low", "mid"]), bf("low")], 
@@ -90,11 +90,46 @@ sb.plan_graph("Values and Jazz",
                 "x": 0,
             },
             width = 0.5,
-            out = "test.svg"
+            out = "test.svg",
+            title = "My Custom Graph"
         )
 )
 
+line1 = sb.Line(exec, "low", 
+        label="Low Label",
+        linestyle='dashdot')
+line2 = sb.Line(exec, "mid", label="Mid Label")
+line3 = sb.Line(exec, "high", label="High Label")
 
+graph2 = sb.plan_graph(
+        sb.LineGraph(
+            [line1, line2, line3],
+            "x",
+            restrict_on = {
+                "pass_me_in": 0,
+            },
+            out = "line.svg",
+            title = "My Lines"
+        )
+)
+line1 = sb.Line(exec, "low", linestyle='dotted')
+line2 = sb.Line(exec, "mid", label="Mid Label")
+line3 = sb.Line(exec, "high", label="High Label")
 
+cdf_graph = sb.plan_graph(
+        sb.LineGraph(
+            [line1, line2, line3],
+            "x",
+            restrict_on = {
+                "pass_me_in": 0,
+            },
+            type = "cdf",
+            out = "cdf.svg",
+            title = "CDF"
+        )
+)
 
-
+sb.plan_figure("Final Figure",
+        [[graph1], [graph2]],
+        out = "final.svg"
+)

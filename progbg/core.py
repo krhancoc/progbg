@@ -31,6 +31,7 @@ from .globals import _EDIT_GLOBAL_TABLE
 
 __pdoc__ = {}
 
+
 class Metrics:
     """Metrics collection object
 
@@ -39,6 +40,7 @@ class Metrics:
     function, which simply appends data points to a list to be used to calculate
     means and standard deviation later
     """
+
     def __init__(self):
         self._vars = dict()
         self._consts = dict()
@@ -208,7 +210,10 @@ class NullBackend:
     @staticmethod
     def uninit():
         pass
+
+
 __pdoc__["NullBackend"] = False
+
 
 class Execution:
     """Execution class, see plan_execution documentation"""
@@ -444,11 +449,16 @@ class Execution:
             title += "{}".format(back.name)
         title += ")"
         return "{}".format(title)
+
+
 __pdoc__["Execution"] = False
+
 
 class NoBenchmark:
     def __init__(self, parser):
         self.parser = parser
+
+
 __pdoc__["NoBenchmark"] = False
 
 
@@ -493,6 +503,8 @@ class ParseExecution:
 
     def clean(self):
         pass
+
+
 __pdoc__["ParseExecution"] = False
 
 
@@ -542,6 +554,7 @@ def compose_backends(*backends):
         >>> 
         >>> composition = compose_backends(Backend1, Backend2)
     """
+
     def construct(self, consts={}, vars=[]):
         self.variables = Variables(consts, vars)
         self.name = "-".join([b.__name__ for b in backends])
@@ -582,7 +595,7 @@ def plan_execution(runner,
         Execution object
 
     Examples:
-        
+
         >>> @registerbenchmark
         >>> class benchmark:
         >>>     def run(x = 10):
@@ -630,13 +643,12 @@ def plan_execution(runner,
     return _sb_executions[-1]
 
 
-def plan_graph(title: str, graphobj):
+def plan_graph(graphobj):
     """Plan a graph object
     Takes a graph object (LineGraph, etc) and ties the a name to it to be
     used by figures
 
     Args:
-        title (str): Title of the graph object
         graphobj (obj): Specified graph to use
 
 
@@ -646,7 +658,6 @@ def plan_graph(title: str, graphobj):
         >>> bf = BarFactory(exec1)
         >>> bf_two = BarFactory(exec2)
         >>> graph = plan_graph(
-        >>>             "My Custom Graph",
         >>>             BarGraph(
         >>>                 [
         >>>                     [bf("data-one"), bf_two("data-one")],
@@ -659,10 +670,8 @@ def plan_graph(title: str, graphobj):
         of the Graph. See `graphing.BarGraph`, `graphing.LineGraph`, 
         `graphing.CustomGraph`, `graphing.Histogram` etc.
     """
-    if title in _sb_graphs:
-        error("Graph already defined: {}".format(title))
-
-    _sb_graphs[title] = graphobj
+    _sb_graphs.append(graphobj)
+    return _sb_graphs[-1]
 
 
 def _is_static(func):
@@ -736,10 +745,12 @@ def registerbackend(cls):
         Wrapped class object
     """
     if not hasattr(cls, "start"):
-        error("Backend requires the init function: {}".format(cls.__name__))
+        error("The following Backend is missing the 'start' function: {}".format(
+            cls.__name__))
 
     if not hasattr(cls, "uninit"):
-        error("Backend requires the uninit function: {}".format(cls.__name__))
+        error("The following Backend is missing the 'uninit' function: {}".format(
+            cls.__name__))
 
     _check_names(cls, cls.start)
     _check_names(cls, cls.uninit)
@@ -798,6 +809,8 @@ def import_plan(filepath: str, mod_globals):
     # Fix globals in our namespace
     for name in _EDIT_GLOBAL_TABLE:
         mod_globals[name] = getattr(getattr(plan_mod, imported_name), name)
+
+
 __pdoc__["import_plan"] = False
 
 
@@ -807,23 +820,24 @@ def default_formatter(fig, axes):
     Override this to apply a default format function to all graphs and figures
     """
 
+
 def _format_fig(fig, axes, formatter):
     if not formatter:
         formatter = default_formatter
 
     formatter(fig, axes)
 
+
 class Figure:
     """Create figure given a set of graphs, for more information see plan_figure documentation"""
 
     def __init__(self,
-                 name: str,
-                 graphs: List[List[str]],
+                 title: str,
+                 graphs: List,
                  formatter,
                  out: str):
-        check_formatter(formatter)
 
-        self.name = name
+        self.title = title
         self.graphs = graphs
         self.formatter = formatter
         self.out = out
@@ -840,22 +854,26 @@ class Figure:
         fig, axes = plt.subplots(ncols=w, nrows=h, squeeze=False)
         for y in range(0, h):
             for x in range(0, w):
-                graph = _sb_graphs[self.graphs[y][x]]
+                graph = self.graphs[y][x]
                 try:
-                    graph.graph(axes[y][x], silent=True)
+                    graph._graph(axes[y][x], silent=True)
                 except Exception as err:
-                    error("Problem with graph {}: {}".format(self.name, err))
+                    error("Problem with graph {}: {}".format(self.title, err))
 
         _format_fig(fig, axes, self.formatter)
+        fig.tight_layout()
 
         out = os.path.join(GRAPHS_DIR, self.out)
-        plt.savefig(out, bbox_inches="tight", pad_inches=0)
+        plt.savefig(out)
         if not out.endswith(".svg"):
             out = ".".join(out.split(".")[:-1]) + ".svg"
-            plt.savefig(out, bbox_inches="tight", pad_inches=0)
+            plt.savefig(out)
+
+
 __pdoc__["Figure"] = False
 
-def plan_figure(title: str, graph_layout: List[List[str]], formatter, out: str):
+
+def plan_figure(title: str, graph_layout: List[List[str]],  out: str, formatter=None):
     """Plan a figure given a set of graphs
     Arguments:
         title (str): Title of the figure
@@ -884,12 +902,9 @@ def plan_figure(title: str, graph_layout: List[List[str]], formatter, out: str):
          Graph1  Graph2 
 
          Graph3  Graph4 
-
     """
-    if name in _sb_figures:
-        error("Figure already defined: {}".format(name))
-
-    _sb_figures[title] = Figure(title, graph_layout, formatter, out)
+    _sb_figures.append(Figure(title, graph_layout, formatter, out))
+    return _sb_figures[-1]
 
 
 def execute_plan(plan: str, args):
@@ -917,20 +932,20 @@ def execute_plan(plan: str, args):
     except FileExistsError:
         pass
 
-    for graph in _sb_graphs.values():
+    for graph in _sb_graphs:
         if len(graph.out):
             fig, axes = plt.subplots()
             fig.set_size_inches(3.25, 3.25)
             graph._graph(axes)
+            fig.tight_layout()
             _format_fig(fig, axes, graph.formatter)
-            for curout in graph.out:
-                out = os.path.join(GRAPHS_DIR, curout)
-                try:
-                    plt.savefig(out)
-                except:
-                    print("Problem with output {}".format(out))
+            out = os.path.join(GRAPHS_DIR, graph.out)
+            try:
+                plt.savefig(out)
+            except:
+                print("Problem with output {}".format(out))
 
-    for fig in _sb_figures.values():
+    for fig in _sb_figures:
         fig.create()
 
     return globals()

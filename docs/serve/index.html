@@ -29,7 +29,8 @@
 <pre><code class="python">import os
 
 from typing import Dict
-from flask import Flask, render_template, send_from_directory
+from flask import Flask, render_template, send_from_directory, abort
+from progbg import BarGraph, LineGraph
 from pprint import pformat
 
 
@@ -48,14 +49,16 @@ def create_server(
     def home():
         return render_template(&#39;index.html&#39;, graphs=graphs, figures=figures)
 
-    @app.route(&#39;/data/&lt;graph_name&gt;&#39;)
-    def data(graph_name=None):
-        graph = graphs[graph_name]
-        if hasattr(graph, &#34;responding&#34;):
+    @app.route(&#39;/data/&lt;graph_index&gt;&#39;)
+    def data(graph_index=None):
+        graph = graphs[int(graph_index)]
+        if isinstance(graph, BarGraph):
             # Its a bar graph
-            return render_template(&#39;bar_data.html&#39;, name=graph_name, graph=graph)
-        else:
-            return render_template(&#39;line_data.html&#39;, name=graph_name, graph=graph)
+            return render_template(&#39;bar_data.html&#39;, name=graph_index, graph=graph)
+        elif isinstance(graph, LineGraph):
+            return render_template(&#39;line_data.html&#39;, name=graph_index, graph=graph)
+
+        abort(404, description=&#34;Not implemented Graph&#34;)
 
     @app.route(&#39;/graphs/&lt;path:filename&gt;&#39;)
     def graphs_static(filename):
@@ -95,14 +98,16 @@ def create_server(
     def home():
         return render_template(&#39;index.html&#39;, graphs=graphs, figures=figures)
 
-    @app.route(&#39;/data/&lt;graph_name&gt;&#39;)
-    def data(graph_name=None):
-        graph = graphs[graph_name]
-        if hasattr(graph, &#34;responding&#34;):
+    @app.route(&#39;/data/&lt;graph_index&gt;&#39;)
+    def data(graph_index=None):
+        graph = graphs[int(graph_index)]
+        if isinstance(graph, BarGraph):
             # Its a bar graph
-            return render_template(&#39;bar_data.html&#39;, name=graph_name, graph=graph)
-        else:
-            return render_template(&#39;line_data.html&#39;, name=graph_name, graph=graph)
+            return render_template(&#39;bar_data.html&#39;, name=graph_index, graph=graph)
+        elif isinstance(graph, LineGraph):
+            return render_template(&#39;line_data.html&#39;, name=graph_index, graph=graph)
+
+        abort(404, description=&#34;Not implemented Graph&#34;)
 
     @app.route(&#39;/graphs/&lt;path:filename&gt;&#39;)
     def graphs_static(filename):
