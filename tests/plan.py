@@ -112,15 +112,24 @@ graph2 = sb.plan_graph(
             title = "My Lines"
         )
 )
+line1 = sb.Line(exec, "low", linestyle='dotted')
+line2 = sb.Line(exec, "mid", label="Mid Label")
+line3 = sb.Line(exec, "high", label="High Label")
+
+cdf_graph = sb.plan_graph(
+        sb.LineGraph(
+            [line1, line2, line3],
+            "x",
+            restrict_on = {
+                "pass_me_in": 0,
+            },
+            type = "cdf",
+            out = "cdf.svg",
+            title = "CDF"
+        )
+)
 
 sb.plan_figure("Final Figure",
         [[graph1], [graph2]],
-        None,
-        "final.svg"
+        out = "final.svg"
 )
-
-
-
-
-
-

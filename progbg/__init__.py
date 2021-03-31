@@ -20,5 +20,3 @@ from .globals import _sb_registered_backend, _sb_graphs, _sb_figures
 
 from .graphing import LineGraph, Line
 from .graphing import BarGraph, Bar, BarFactory
-
-from .graphing import Histogram, CustomGraph

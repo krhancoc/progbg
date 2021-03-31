@@ -8,6 +8,7 @@ from typing import List, Dict, Tuple
 
 from .globals import _sb_rnames
 
+
 def reformat_large(tick_val):
     if tick_val >= 1000000000:
         val = round(tick_val / 1000000000, 1)
@@ -41,7 +42,6 @@ def normalize(group_list, index_to):
         newval = group[0] / normal[0]
         final_list.append((newval, stddev * newval))
     return final_list
-
 
 
 def silence_print():

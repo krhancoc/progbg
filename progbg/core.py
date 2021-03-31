@@ -31,6 +31,7 @@ from .globals import _EDIT_GLOBAL_TABLE
 
 __pdoc__ = {}
 
+
 class Metrics:
     """Metrics collection object
 
@@ -39,6 +40,7 @@ class Metrics:
     function, which simply appends data points to a list to be used to calculate
     means and standard deviation later
     """
+
     def __init__(self):
         self._vars = dict()
         self._consts = dict()
@@ -208,7 +210,10 @@ class NullBackend:
     @staticmethod
     def uninit():
         pass
+
+
 __pdoc__["NullBackend"] = False
+
 
 class Execution:
     """Execution class, see plan_execution documentation"""
@@ -444,11 +449,16 @@ class Execution:
             title += "{}".format(back.name)
         title += ")"
         return "{}".format(title)
+
+
 __pdoc__["Execution"] = False
+
 
 class NoBenchmark:
     def __init__(self, parser):
         self.parser = parser
+
+
 __pdoc__["NoBenchmark"] = False
 
 
@@ -493,6 +503,8 @@ class ParseExecution:
 
     def clean(self):
         pass
+
+
 __pdoc__["ParseExecution"] = False
 
 
@@ -542,6 +554,7 @@ def compose_backends(*backends):
         >>> 
         >>> composition = compose_backends(Backend1, Backend2)
     """
+
     def construct(self, consts={}, vars=[]):
         self.variables = Variables(consts, vars)
         self.name = "-".join([b.__name__ for b in backends])
@@ -582,7 +595,7 @@ def plan_execution(runner,
         Execution object
 
     Examples:
-        
+
         >>> @registerbenchmark
         >>> class benchmark:
         >>>     def run(x = 10):
@@ -732,10 +745,12 @@ def registerbackend(cls):
         Wrapped class object
     """
     if not hasattr(cls, "start"):
-        error("The following Backend is missing the 'start' function: {}".format(cls.__name__))
+        error("The following Backend is missing the 'start' function: {}".format(
+            cls.__name__))
 
     if not hasattr(cls, "uninit"):
-        error("The following Backend is missing the 'uninit' function: {}".format(cls.__name__))
+        error("The following Backend is missing the 'uninit' function: {}".format(
+            cls.__name__))
 
     _check_names(cls, cls.start)
     _check_names(cls, cls.uninit)
@@ -794,6 +809,8 @@ def import_plan(filepath: str, mod_globals):
     # Fix globals in our namespace
     for name in _EDIT_GLOBAL_TABLE:
         mod_globals[name] = getattr(getattr(plan_mod, imported_name), name)
+
+
 __pdoc__["import_plan"] = False
 
 
@@ -803,11 +820,13 @@ def default_formatter(fig, axes):
     Override this to apply a default format function to all graphs and figures
     """
 
+
 def _format_fig(fig, axes, formatter):
     if not formatter:
         formatter = default_formatter
 
     formatter(fig, axes)
+
 
 class Figure:
     """Create figure given a set of graphs, for more information see plan_figure documentation"""
@@ -849,9 +868,12 @@ class Figure:
         if not out.endswith(".svg"):
             out = ".".join(out.split(".")[:-1]) + ".svg"
             plt.savefig(out)
+
+
 __pdoc__["Figure"] = False
 
-def plan_figure(title: str, graph_layout: List[List[str]], formatter, out: str):
+
+def plan_figure(title: str, graph_layout: List[List[str]],  out: str, formatter=None):
     """Plan a figure given a set of graphs
     Arguments:
         title (str): Title of the figure
@@ -880,7 +902,6 @@ def plan_figure(title: str, graph_layout: List[List[str]], formatter, out: str):
          Graph1  Graph2 
 
          Graph3  Graph4 
-
     """
     _sb_figures.append(Figure(title, graph_layout, formatter, out))
     return _sb_figures[-1]
@@ -916,6 +937,7 @@ def execute_plan(plan: str, args):
             fig, axes = plt.subplots()
             fig.set_size_inches(3.25, 3.25)
             graph._graph(axes)
+            fig.tight_layout()
             _format_fig(fig, axes, graph.formatter)
             out = os.path.join(GRAPHS_DIR, graph.out)
             try:

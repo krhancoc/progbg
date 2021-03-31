@@ -24,8 +24,6 @@ Example
 Take a look at a working [example](tests/plan.py) plan.  Try running it with the command
 `progbg plan.py -p 8080` and go to `localhost:8080` to view the example graphs!
 
-A step by step guide through an example can be found [here](learnbyexample.md).
-
 
 Viewing Graphs
 ------------
