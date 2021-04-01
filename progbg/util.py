@@ -30,7 +30,7 @@ def reformat_large(tick_val):
         if value_after_decimal == "0":
             new_tick_format = (
                 new_tick_format[0:index_of_decimal]
-                + new_tick_format[index_of_decimal + 2:]
+                + new_tick_format[index_of_decimal + 2 :]
             )
 
     return new_tick_format
@@ -105,8 +105,7 @@ class Variables:
             for vals in var:
                 if vals[0] in consts:
                     raise Exception(
-                        "Name defined as constant and varying: {}".format(
-                            vals[0])
+                        "Name defined as constant and varying: {}".format(vals[0])
                     )
 
         self.consts = consts

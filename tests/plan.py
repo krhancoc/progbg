@@ -47,7 +47,7 @@ class Wrk:
         min = str(randint(1, 499))
         vals = "{} {}\n".format(test, x)
         strn = "Latency  {}  {}  {}".format(avg, max, min)
-        with open(outfile, 'w') as out:
+        with open(outfile, "w") as out:
             out.write(vals)
             out.write(strn)
 
@@ -57,13 +57,13 @@ def func(line):
 
 
 def file_func(metrics, path):
-    with open(path, 'r') as file:
+    with open(path, "r") as file:
         for line in file.readlines():
             if "Latency" in line:
                 vals = [int(x.strip()) for x in line.split()[1:]]
                 metrics.add_metric("low", vals[0])
                 metrics.add_metric("mid", vals[1])
-                metrics.add_metric("high",  vals[2])
+                metrics.add_metric("high", vals[2])
 
 
 def text_parser(metrics, path):
@@ -75,8 +75,7 @@ composed_backend = sb.compose_backends(Tomcat, FFS)
 exec = sb.plan_execution(
     Wrk({}, [("x", range(0, 5))], iterations=5),
     out="out",
-    backends=[composed_backend({},
-                               [("pass_me_in", range(0, 10, 2))])],
+    backends=[composed_backend({}, [("pass_me_in", range(0, 10, 2))])],
     parser=file_func,
 )
 
@@ -88,7 +87,7 @@ graph1 = sb.plan_graph(
         [
             [bf("low", "custom-label1"), bf(["low", "mid"]), bf("low")],
             [bf("low"), bf("low")],
-            [bf("low"), bf(["low", "mid", "high"], "otherlabel")]
+            [bf("low"), bf(["low", "mid", "high"], "otherlabel")],
         ],
         group_labels=["yolo-1", "yolo-2", "yolo-3"],
         restrict_on={
@@ -98,12 +97,11 @@ graph1 = sb.plan_graph(
         width=0.5,
         out="test.svg",
         title="My Custom Graph",
-        style="hatch_a"
+        style="hatch_a",
     )
 )
 
-line1 = sb.Line(exec, "low",
-                label="Low Label")
+line1 = sb.Line(exec, "low", label="Low Label")
 line2 = sb.Line(exec, "mid", label="Mid Label")
 line3 = sb.Line(exec, "high", label="High Label")
 
@@ -116,10 +114,10 @@ graph2 = sb.plan_graph(
         },
         out="line.svg",
         title="My Lines",
-        style="color_b"
+        style="color_b",
     )
 )
-line1 = sb.Line(exec, "low", linestyle='dotted')
+line1 = sb.Line(exec, "low", linestyle="dotted")
 line2 = sb.Line(exec, "mid", label="Mid Label")
 line3 = sb.Line(exec, "high", label="High Label")
 
@@ -137,7 +135,4 @@ cdf_graph = sb.plan_graph(
     )
 )
 
-sb.plan_figure("Final Figure",
-               [[graph1], [graph2]],
-               out="final.svg"
-               )
+sb.plan_figure("Final Figure", [[graph1], [graph2]], out="final.svg")

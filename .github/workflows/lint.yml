@@ -23,4 +23,3 @@ jobs:
               uses: wearerequired/lint-action@v1
               with:
                 black: true
-                auto_fix: true

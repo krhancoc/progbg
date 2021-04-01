@@ -42,8 +42,7 @@ def _is_good(benchmark, restriction):
 
 
 def _retrieve_data_files(execution, restriction):
-    files = [os.path.join(execution.out, path)
-             for path in os.listdir(execution.out)]
+    files = [os.path.join(execution.out, path) for path in os.listdir(execution.out)]
     benchmarks = []
     for file in files:
         try:
@@ -92,8 +91,7 @@ def _retrieve_data_db(execution, restriction):
     clauses = ["({}='{}')".format(k, v) for k, v in new_restrict.items()]
     full = " AND ".join(clauses)
     quotes = ["{}".format(val) for val in execution.tables[tablename]]
-    exec_str = "SELECT {} FROM {} WHERE ({})".format(
-        ",".join(quotes), tablename, full)
+    exec_str = "SELECT {} FROM {} WHERE ({})".format(",".join(quotes), tablename, full)
     c.execute(exec_str)
     data = c.fetchall()
     if not len(data):
@@ -102,8 +100,7 @@ def _retrieve_data_db(execution, restriction):
     if len(data[0]) != len(execution.tables[tablename]):
         raise Exception("Data types not matching with sqldb")
 
-    benchmarks = [dict(zip(execution.tables[tablename], vals))
-                  for vals in data]
+    benchmarks = [dict(zip(execution.tables[tablename], vals)) for vals in data]
     c.close()
     conn.close()
 
@@ -263,8 +260,7 @@ class BarGraph:
         matrix = np.array(matrix)
 
         df = pd.DataFrame(
-            matrix, columns=column_space, index=[
-                b.workload.name for b in flatten]
+            matrix, columns=column_space, index=[b.workload.name for b in flatten]
         )
 
         df.plot(kind="bar", stacked=True, ax=ax, **default_kwargs)

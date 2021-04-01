@@ -165,8 +165,7 @@ def registerbackend_sh(name: str, file_path: str):
 
     @staticmethod
     def init():
-        shell = subprocess.Popen(
-            "sh", stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+        shell = subprocess.Popen("sh", stdin=subprocess.PIPE, stdout=subprocess.PIPE)
         script = open(file_path, "r").read()
         script += "\n"
         shell.stdin.write(str.encode(script))
@@ -232,15 +231,13 @@ class Execution:
         self.parser = parser
         self._cached = None
         self.name = (
-            ",".join([back.name for back in self.backends]) +
-            "-" + self.bench.name
+            ",".join([back.name for back in self.backends]) + "-" + self.bench.name
         )
 
     def print(self, string):
         """Pretty printer for execution"""
         print(
-            "\033[1;31m[{} - {}]:\033[0m {}".format(
-                self.name, self.bench.name, string)
+            "\033[1;31m[{} - {}]:\033[0m {}".format(self.name, self.bench.name, string)
         )
 
     def tables(self):
