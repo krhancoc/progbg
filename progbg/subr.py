@@ -20,13 +20,13 @@ def check_one_varying(benchmarks: List[Dict], extras: List[str] = []):
         benchmarks: List of parsed benchmark objects
         extras: List of variable names that are allowed to vary
     """
-    execution = _sb_executions[benchmarks[0]['_execution_name']]
+    execution = _sb_executions[benchmarks[0]["_execution_name"]]
     varying = []
     for rule in execution.bench.parser.fields():
         varying.append(rule)
 
     varying.extend(extras)
-    varying.append('_iter')
+    varying.append("_iter")
 
     consts = {k: v for k, v in benchmarks[0].items() if k not in varying}
     for bench in benchmarks[1:]:
@@ -38,8 +38,11 @@ def check_one_varying(benchmarks: List[Dict], extras: List[str] = []):
                 consts[key] = val
             else:
                 if str(consts[key]) != str(val):
-                    print("Only one variable should be changing in the graph: {}"
-                          .format(key))
+                    print(
+                        "Only one variable should be changing in the graph: {}".format(
+                            key
+                        )
+                    )
                     exit(0)
 
 
@@ -76,8 +79,11 @@ def aggregate_list(group, filter_func=None):
                 if not group[i][k]:
                     continue
             except:
-                print("Problem with Benchmark {}: Iteration {}".format(
-                    group[i]['_execution_name'], group[i]['_iter']))
+                print(
+                    "Problem with Benchmark {}: Iteration {}".format(
+                        group[i]["_execution_name"], group[i]["_iter"]
+                    )
+                )
                 print(group[i])
                 continue
 

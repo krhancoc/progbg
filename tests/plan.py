@@ -97,8 +97,7 @@ graph1 = sb.plan_graph(
 )
 
 line1 = sb.Line(exec, "low", 
-        label="Low Label",
-        linestyle='dashdot')
+        label="Low Label")
 line2 = sb.Line(exec, "mid", label="Mid Label")
 line3 = sb.Line(exec, "high", label="High Label")
 
@@ -127,7 +126,8 @@ cdf_graph = sb.plan_graph(
             },
             type = "cdf",
             out = "cdf.svg",
-            title = "CDF"
+            title = "CDF",
+            style = "line_a",
         )
 )
 

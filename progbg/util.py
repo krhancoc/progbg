@@ -12,13 +12,13 @@ from .globals import _sb_rnames
 def reformat_large(tick_val):
     if tick_val >= 1000000000:
         val = round(tick_val / 1000000000, 1)
-        new_tick_format = '{:}B'.format(val)
+        new_tick_format = "{:}B".format(val)
     elif tick_val >= 1000000:
         val = round(tick_val / 1000000, 1)
-        new_tick_format = '{:}M'.format(val)
+        new_tick_format = "{:}M".format(val)
     elif tick_val >= 1000:
         val = round(tick_val / 1000, 1)
-        new_tick_format = '{:}K'.format(val)
+        new_tick_format = "{:}K".format(val)
     else:
         new_tick_format = tick_val
 
@@ -28,8 +28,10 @@ def reformat_large(tick_val):
     if index_of_decimal != -1:
         value_after_decimal = new_tick_format[index_of_decimal + 1]
         if value_after_decimal == "0":
-            new_tick_format = new_tick_format[0:index_of_decimal] + \
-                new_tick_format[index_of_decimal + 2:]
+            new_tick_format = (
+                new_tick_format[0:index_of_decimal]
+                + new_tick_format[index_of_decimal + 2 :]
+            )
 
     return new_tick_format
 
@@ -45,7 +47,7 @@ def normalize(group_list, index_to):
 
 
 def silence_print():
-    sys.stdout = open(os.devnull, 'w')
+    sys.stdout = open(os.devnull, "w")
 
 
 def restore_print():
@@ -60,7 +62,7 @@ def error(strn: str):
 
 def dump_obj(file: str, obj: Dict):
     """Dump dictionary to file key=val"""
-    with open(file, 'w') as ofile:
+    with open(file, "w") as ofile:
         for key, val in obj.items():
             line = "{}={}\n".format(key, val)
             ofile.write(line)
@@ -69,9 +71,9 @@ def dump_obj(file: str, obj: Dict):
 def retrieve_obj(file: str) -> Dict:
     """Retrieve dictionary from file key=val"""
     obj = {}
-    with open(file, 'r') as ofile:
+    with open(file, "r") as ofile:
         for line in ofile.readlines():
-            vals = line.strip().split('=')
+            vals = line.strip().split("=")
             try:
                 obj[vals[0]] = vals[1]
             except:
@@ -92,17 +94,19 @@ class Variables:
         var: A tuple of an argument name and some iterable object
     """
 
-    def __init__(self, consts: Dict = None,
-                 var: List[Tuple[str, List]] = None) -> None:
+    def __init__(self, consts: Dict = None, var: List[Tuple[str, List]] = None) -> None:
         if len(var):
             if any([i in consts for i in _sb_rnames]) or (var[0] in _sb_rnames):
                 raise Exception(
                     "Cannot use a reserved name for a variable {}".format(
-                        pformat(_sb_rnames)))
+                        pformat(_sb_rnames)
+                    )
+                )
             for vals in var:
                 if vals[0] in consts:
-                    raise Exception("Name defined as constant and varying: {}".format(
-                        vals[0]))
+                    raise Exception(
+                        "Name defined as constant and varying: {}".format(vals[0])
+                    )
 
         self.consts = consts
         self.var = var
@@ -157,24 +161,24 @@ class Variables:
 
 class Backend:
     def __init__(self, path, variables):
-        self.backends = path.split('/')
+        self.backends = path.split("/")
         self.runtime_variables = variables
 
     @staticmethod
     def user_to_sql(path):
-        return "_b_".join(path.split('/'))
+        return "_b_".join(path.split("/"))
 
     @staticmethod
     def user_to_out(path):
-        return "-".join(path.split('/'))
+        return "-".join(path.split("/"))
 
     @staticmethod
     def out_to_user(path):
-        return "/".join(path.split('-'))
+        return "/".join(path.split("-"))
 
     @staticmethod
     def out_to_sql(path):
-        return "_b_".join(path.split('-'))
+        return "_b_".join(path.split("-"))
 
     @property
     def path_sql(self):
@@ -189,5 +193,8 @@ class Backend:
         return "-".join(self.backends)
 
     def __eq__(self, path):
-        return (self.path_sql == path) or (self.path_out == path) or \
-            (self.path_user == path)
+        return (
+            (self.path_sql == path)
+            or (self.path_out == path)
+            or (self.path_user == path)
+        )

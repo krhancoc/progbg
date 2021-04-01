@@ -22,4 +22,3 @@ from .graphing import LineGraph, Line
 from .graphing import BarGraph, Bar, BarFactory
 
 from .style import get_style
-
