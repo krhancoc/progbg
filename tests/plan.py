@@ -1,7 +1,7 @@
 import progbg as sb
 import time
-import os
 from random import randint
+from cycler import cycler
 
 
 @sb.registerbackend
@@ -134,5 +134,20 @@ cdf_graph = sb.plan_graph(
         style="line_a",
     )
 )
+
+custom_style_graph = sb.plan_graph(
+    sb.LineGraph(
+        [line1, line2],
+        "x",
+        restrict_on={
+            "pass_me_in": 0,
+        },
+        type="cdf",
+        out="custom_style.svg",
+        title="My Custom Style",
+        style=cycler(color=["blue", "green"]),
+    )
+)
+
 
 sb.plan_figure("Final Figure", [[graph1], [graph2]], out="final.svg")

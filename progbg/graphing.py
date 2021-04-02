@@ -22,7 +22,7 @@ import os
 import matplotlib as mpl
 import numpy as np
 
-from cycler import cycler
+from cycler import cycler, Cycler
 
 from .globals import _sb_executions
 from .subr import retrieve_axes, check_one_varying
@@ -543,7 +543,7 @@ class LineGraph:
         """
         self._print("Graphing", silent)
         # Check style guide
-        if isinstance(self.style, cycler.__class__):
+        if isinstance(self.style, Cycler):
             style = iter(self.style)
         else:
             style = iter(get_style(self.style))
