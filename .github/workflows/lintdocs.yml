@@ -24,11 +24,17 @@ jobs:
               with:
                 black: true
                 
+            - name: Install Python dependencies For Autogen docs
+              if: github.ref == 'refs/heads/master'
+              run: pip install pdoc3 matplotlib pandas flask
+
             - name: Generate Docs
+              if: github.ref == 'refs/heads/master'
               run: |
                 ./scripts/generate_docs.sh
                 
             - name: Commit
+              if: github.ref == 'refs/heads/master'
               run: |
                 git config --local user.email "autogen-docs[bots]@github.com" &&
                 git config --local user.name "autogen-docs-commit" &&
