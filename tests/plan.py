@@ -150,4 +150,6 @@ custom_style_graph = sb.plan_graph(
 )
 
 
-sb.plan_figure("Final Figure", [[graph1, graph2], [cdf_graph, custom_style_graph]], out="final.svg")
+sb.plan_figure(
+    "Final Figure", [[graph1, graph2], [cdf_graph, custom_style_graph]], out="final.svg"
+)
