@@ -30,9 +30,9 @@ jobs:
                 
             - name: Commit
               run: |
-                git config --local user.email "autogen-docs[bots]@github.com"
-                git config --local user.name "autogen-docs-commit"
-                git commit -m "CI: Automated Docs" | exit 0
+                git config --local user.email "autogen-docs[bots]@github.com" &&
+                git config --local user.name "autogen-docs-commit" &&
+                git commit -m "CI: Automated Docs" | exit 0 
                 
             - name: Push
               if: github.ref == 'refs/heads/master'
