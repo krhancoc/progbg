@@ -940,7 +940,6 @@ def execute_plan(plan: str, args):
     for graph in _sb_graphs:
         if len(graph.out):
             fig, axes = plt.subplots()
-            fig.set_size_inches(3.25, 3.25)
             graph._graph(axes)
             fig.tight_layout()
             _format_fig(fig, axes, graph.formatter)

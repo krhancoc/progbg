@@ -96,7 +96,7 @@ graph1 = sb.plan_graph(
         },
         width=0.5,
         out="test.svg",
-        title="My Custom Graph",
+        title="Sample BarGraph",
         style="hatch_a",
     )
 )
@@ -113,7 +113,7 @@ graph2 = sb.plan_graph(
             "pass_me_in": 0,
         },
         out="line.svg",
-        title="My Lines",
+        title="Sample Line Graph",
         style="color_b",
     )
 )
@@ -144,10 +144,10 @@ custom_style_graph = sb.plan_graph(
         },
         type="cdf",
         out="custom_style.svg",
-        title="My Custom Style",
+        title="Custom Style Graph",
         style=cycler(color=["blue", "green"]),
     )
 )
 
 
-sb.plan_figure("Final Figure", [[graph1], [graph2]], out="final.svg")
+sb.plan_figure("Final Figure", [[graph1, graph2], [cdf_graph, custom_style_graph]], out="final.svg")

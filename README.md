@@ -11,6 +11,8 @@ your benchmarks through the registering of workloads and backends. Data produced
 
 More information and docs can be found [here](https://krhancoc.github.io/progbg/)
 
+
+![Sample Figure](samples/samplefig.svg)
 Installation
 ------------
 `progbg` can be installed through pip
