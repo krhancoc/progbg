@@ -17,7 +17,7 @@ jobs:
                 python-version: 3.8
 
             - name: Install Python dependencies
-              run: pip install black flake8 pdoc3 matplotlib pandas
+              run: pip install black flake8 pdoc3 matplotlib pandas flask
 
             - name: Run linters
               uses: wearerequired/lint-action@v1
@@ -30,7 +30,6 @@ jobs:
                 
             - name: Commit
               run: |
-                ./scripts/generate_docs.sh
                 git config --local user.email "autogen-docs[bots]@github.com"
                 git config --local user.name "autogen-docs-commit"
                 git commit -m "CI: Automated Docs" | exit 0
