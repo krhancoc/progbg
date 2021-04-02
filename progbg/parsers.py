@@ -34,15 +34,17 @@ class MatchParser:
             if re.search(cand, line):
                 output = tup[1](line)
                 if len(output) != len(tup[0]):
-                    raise Exception("Function provided outputed {} values, expected {}"
-                                    .format(len(output), len(tup[0])))
+                    raise Exception(
+                        "Function provided outputed {} values, expected {}".format(
+                            len(output), len(tup[0])
+                        )
+                    )
                 for match in zip(tup[0], output):
                     obj[match[0]] = match[1]
 
     def param_exists(self, name: str) -> bool:
         """Check if a param exists as an output of the parser"""
-        return any([name in varfunc[0]
-                    for varfunc in self.match_rules.values()])
+        return any([name in varfunc[0] for varfunc in self.match_rules.values()])
 
     def fields(self) -> List[str]:
         """ Retrieve all named fields within the parser"""
@@ -51,7 +53,7 @@ class MatchParser:
     def parse(self, path, bench_args, backend_args) -> List:
         """Parse the execution"""
         obj = {}
-        with open(path, 'r') as file:
+        with open(path, "r") as file:
             for line in file:
                 self._match(line, obj)
             # Make sure to put constants in the data as well
@@ -64,19 +66,19 @@ class MatchParser:
 
             # We hold field names within our filename as well, things like iteration number
             # and var variable value
-            obj['_execution_name'] = path.split('/')[-1].split('_')[0]
-            execution = _sb_executions[obj['_execution_name']]
+            obj["_execution_name"] = path.split("/")[-1].split("_")[0]
+            execution = _sb_executions[obj["_execution_name"]]
             obj.update(execution.reverse_file_out(path))
 
         return obj
 
 
 class FileParser:
-    """ FileParser class parses an entire file pointed to by the path variable using a user
+    """FileParser class parses an entire file pointed to by the path variable using a user
     defined function
 
     Arguments:
-    names: Name bindings for the expected output from func.    
+    names: Name bindings for the expected output from func.
     func: A function of the form `def func(path): ...` where path is the name
     of the file to be parsed.   Func should return a list that is the same
     length as names.
@@ -101,8 +103,11 @@ class FileParser:
             return None
 
         if len(vals) != len(self.names):
-            raise Exception("Issue with provided function, returned {} vals, expected {}".format(
-                str(len(vals)), str(len(self.names))))
+            raise Exception(
+                "Issue with provided function, returned {} vals, expected {}".format(
+                    str(len(vals)), str(len(self.names))
+                )
+            )
 
         obj = {}
         for val in zip(self.names, vals):
@@ -112,8 +117,8 @@ class FileParser:
             for key, val in backend_args.items():
                 obj[key] = val
 
-        obj['_execution_name'] = path.split('/')[-1].split('_')[0]
-        execution = _sb_executions[obj['_execution_name']]
+        obj["_execution_name"] = path.split("/")[-1].split("_")[0]
+        execution = _sb_executions[obj["_execution_name"]]
         obj.update(execution.reverse_file_out(path))
 
         return obj

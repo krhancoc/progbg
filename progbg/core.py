@@ -141,11 +141,11 @@ def _retrieve_backends(back_obj):
 
 
 def registerbenchmark_sh(name: str, file_path: str):
-    custom_backend = type(name, (object, ), {})
+    custom_backend = type(name, (object,), {})
 
     @staticmethod
     def run(backend, out_file):
-        out = open(out_file, 'w')
+        out = open(out_file, "w")
         shell = subprocess.Popen("sh", stdin=subprocess.PIPE, stdout=out)
         script = open(file_path, "r").read()
         script += "\n"
@@ -161,12 +161,11 @@ def registerbenchmark_sh(name: str, file_path: str):
 
 
 def registerbackend_sh(name: str, file_path: str):
-    custom_backend = type(name, (object, ), {})
+    custom_backend = type(name, (object,), {})
 
     @staticmethod
     def init():
-        shell = subprocess.Popen(
-            "sh", stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+        shell = subprocess.Popen("sh", stdin=subprocess.PIPE, stdout=subprocess.PIPE)
         script = open(file_path, "r").read()
         script += "\n"
         shell.stdin.write(str.encode(script))
@@ -175,7 +174,7 @@ def registerbackend_sh(name: str, file_path: str):
         shell.stdin.close()
         environment = dict()
         for line in shell.stdout:
-            name, value = line.decode('ascii').strip().split('=', 1)
+            name, value = line.decode("ascii").strip().split("=", 1)
             environment[name] = value
         uniq = {k: environment[k] for k in set(environment) - set(os.environ)}
         custom_backend.env = uniq
@@ -186,7 +185,8 @@ def registerbackend_sh(name: str, file_path: str):
     @staticmethod
     def uninit():
         shell = subprocess.Popen(
-            "sh", stdin=subprocess.PIPE, stdout=subprocess.PIPE, env=custom_backend.env)
+            "sh", stdin=subprocess.PIPE, stdout=subprocess.PIPE, env=custom_backend.env
+        )
         script = open(file_path, "r").read()
         script += "\n"
         shell.stdin.write(str.encode(script))
@@ -230,13 +230,15 @@ class Execution:
         self.out = out
         self.parser = parser
         self._cached = None
-        self.name = ",".join(
-            [back.name for back in self.backends]) + "-" + self.bench.name
+        self.name = (
+            ",".join([back.name for back in self.backends]) + "-" + self.bench.name
+        )
 
     def print(self, string):
         """Pretty printer for execution"""
-        print("\033[1;31m[{} - {}]:\033[0m {}".format(self.name,
-                                                      self.bench.name, string))
+        print(
+            "\033[1;31m[{} - {}]:\033[0m {}".format(self.name, self.bench.name, string)
+        )
 
     def tables(self):
         """
@@ -252,15 +254,15 @@ class Execution:
                 fields_backends = _retrieve_named_backends(back_obj)
                 fields_benchmark = _retrieve_named_benchmarks(self.bench.name)
                 fields_parser = self.bench.parser.fields()
-                tablename = "{}__{}__{}".format(self.name,
-                                                self.bench.name, back_obj.path_sql)
+                tablename = "{}__{}__{}".format(
+                    self.name, self.bench.name, back_obj.path_sql
+                )
                 fields = fields_backends + fields_benchmark + fields_parser + _sb_rnames
                 tables[tablename] = sorted(fields)
         else:
             fields_benchmark = _retrieve_named_benchmarks(self.bench.name)
             fields_parser = self.bench.parser.fields()
-            tablename = "{}__{}".format(self.name,
-                                        self.bench.name)
+            tablename = "{}__{}".format(self.name, self.bench.name)
             fields = fields_benchmark + fields_parser + _sb_rnames
             tables[tablename] = sorted(fields)
 
@@ -287,7 +289,7 @@ class Execution:
         c = conn.cursor()
         inserted = False
         for name_full, fields in self.tables.items():
-            name = name_full.split('__')
+            name = name_full.split("__")
             if obj["_execution_name"] != name[0]:
                 continue
 
@@ -319,8 +321,9 @@ class Execution:
                         vals.append('""')
 
             quotes = ['"{}"'.format(val.strip()) for val in fields]
-            exec_str = "INSERT INTO {} ({})\nVALUES ({});".format(name_full,
-                                                                  ",".join(quotes), ",".join(vals))
+            exec_str = "INSERT INTO {} ({})\nVALUES ({});".format(
+                name_full, ",".join(quotes), ",".join(vals)
+            )
 
             c.execute(exec_str)
             conn.commit()
@@ -343,7 +346,10 @@ class Execution:
                 if len(os.listdir(self.out)) > 0:
                     self.print(e)
                     self.print(
-                        "Problem creating out directory {}, test data already there".format(self.out))
+                        "Problem creating out directory {}, test data already there".format(
+                            self.out
+                        )
+                    )
                     exit(0)
 
     def _merged_args(self, back_vars):
@@ -351,10 +357,7 @@ class Execution:
         backend = back_vars.produce_args()
         args = []
         for back in backend:
-            arg = dict(
-                benchmark=benchmark,
-                backend=back
-            )
+            arg = dict(benchmark=benchmark, backend=back)
             args.append(arg)
 
         return args
@@ -377,9 +380,10 @@ class Execution:
                         metrics.add_constant(k, v)
                     for k, v in back_args.items():
                         metrics.add_constant(k, v)
-                    for iteration in range(0,  self.bench.iterations):
-                        out_file = os.path.abspath(self.out_file(back,
-                                                                 back_args, ba, iteration))
+                    for iteration in range(0, self.bench.iterations):
+                        out_file = os.path.abspath(
+                            self.out_file(back, back_args, ba, iteration)
+                        )
                         self.parser(metrics, out_file)
                     combined.append(metrics)
 
@@ -406,7 +410,7 @@ class Execution:
 
     def is_sql_backed(self):
         """Checks if execution storage backend is sqlite3"""
-        return self.out.endswith('.db')
+        return self.out.endswith(".db")
 
     def execute(self):
         """Execute the execution defined
@@ -426,9 +430,10 @@ class Execution:
                 back.__class__.start(**back_args)
                 # Go through every benchmark argument listing
                 for ba in bench_args:
-                    for iteration in range(0,  self.bench.iterations):
-                        out_file = os.path.abspath(self.out_file(back,
-                                                                 back_args, ba, iteration))
+                    for iteration in range(0, self.bench.iterations):
+                        out_file = os.path.abspath(
+                            self.out_file(back, back_args, ba, iteration)
+                        )
                         self.bench.__class__.run(back.name, out_file, **ba)
                 back.__class__.uninit()
 
@@ -436,8 +441,12 @@ class Execution:
         """Checks if a param exists within either the benchmark or the parser"""
         bench_has = self.bench.param_exists(name)
         if self.backends:
-            backend_has = any([back_obj.runtime_variables.param_exists(name)
-                               for back_obj in self.backends])
+            backend_has = any(
+                [
+                    back_obj.runtime_variables.param_exists(name)
+                    for back_obj in self.backends
+                ]
+            )
         else:
             backend_has = False
 
@@ -543,15 +552,15 @@ def compose_backends(*backends):
         *backends (class): Class objects to compose together
 
     Examples:
-        >>> 
-        >>> @registerbackend     
+        >>>
+        >>> @registerbackend
         >>> class Backend1
         >>>     ...
-        >>> 
+        >>>
         >>> @registerbackend
         >>> class Backend2
         >>>     ...
-        >>> 
+        >>>
         >>> composition = compose_backends(Backend1, Backend2)
     """
 
@@ -567,19 +576,14 @@ def compose_backends(*backends):
         for backend in reversed(backends):
             backend.uninit()
 
-    composition = type("", (), {
-        "__init__": construct,
-        "start": start,
-        "uninit": uninit
-    })
+    composition = type(
+        "", (), {"__init__": construct, "start": start, "uninit": uninit}
+    )
 
     return composition
 
 
-def plan_execution(runner,
-                   backends: List = None,
-                   parser=None,
-                   out: str = None) -> None:
+def plan_execution(runner, backends: List = None, parser=None, out: str = None) -> None:
     """Plan an execution
 
     Definition of an execution of a workload/benchmark and backends you wish to run the workload
@@ -587,7 +591,7 @@ def plan_execution(runner,
 
     Args:
         runner (Benchmark): Constructed Benchmark object
-        backends (List): List of Constructed backends to run on    
+        backends (List): List of Constructed backends to run on
         parser (Function): Parsing function which takes a metrics, and out_file as args.
         out (str): Directory in which to place parsed output.
 
@@ -600,14 +604,14 @@ def plan_execution(runner,
         >>> class benchmark:
         >>>     def run(x = 10):
         >>>         ...
-        >>> 
+        >>>
         >>> @registerbackend:
         >>> class myback:
         >>>     ...
-        >>> 
+        >>>
         >>> def my_parser(metrics: Metrics, out_file: str):
         >>>     ...
-        >>> 
+        >>>
         >>> execution = plan_execution(
         >>>                 benchmark({}, [("x", range(0, 10))]),
         >>>                 out = "out",
@@ -663,11 +667,11 @@ def plan_graph(graphobj):
         >>>                     [bf("data-one"), bf_two("data-one")],
         >>>                     [bf("data-two"), bf_two("data-two")],
         >>>                 ],
-        >>>             ... 
+        >>>             ...
         >>> )
 
         Above is an example of using plan graph.  Arguments are mostly dependent on each implementation
-        of the Graph. See `graphing.BarGraph`, `graphing.LineGraph`, 
+        of the Graph. See `graphing.BarGraph`, `graphing.LineGraph`,
         `graphing.CustomGraph`, `graphing.Histogram` etc.
     """
     _sb_graphs.append(graphobj)
@@ -745,12 +749,18 @@ def registerbackend(cls):
         Wrapped class object
     """
     if not hasattr(cls, "start"):
-        error("The following Backend is missing the 'start' function: {}".format(
-            cls.__name__))
+        error(
+            "The following Backend is missing the 'start' function: {}".format(
+                cls.__name__
+            )
+        )
 
     if not hasattr(cls, "uninit"):
-        error("The following Backend is missing the 'uninit' function: {}".format(
-            cls.__name__))
+        error(
+            "The following Backend is missing the 'uninit' function: {}".format(
+                cls.__name__
+            )
+        )
 
     _check_names(cls, cls.start)
     _check_names(cls, cls.uninit)
@@ -785,8 +795,7 @@ def import_plan(filepath: str, mod_globals):
         filepath: Path to the .py plan file
         mod_globals: Globals dictionary object (globals())
     """
-    spec = importlib.util.spec_from_file_location('_plan',
-                                                  filepath)
+    spec = importlib.util.spec_from_file_location("_plan", filepath)
     plan_mod = importlib.util.module_from_spec(spec)
     # Different module so different global
     sys.modules["_plan"] = plan_mod
@@ -800,7 +809,7 @@ def import_plan(filepath: str, mod_globals):
     # globals to theirs
     imported_name = ""
     for name, mod in members:
-        if hasattr(mod, '_sb_executions'):
+        if hasattr(mod, "_sb_executions"):
             imported_name = name
 
     if not imported_name:
@@ -815,7 +824,7 @@ __pdoc__["import_plan"] = False
 
 
 def default_formatter(fig, axes):
-    """ Default formatter placeholder
+    """Default formatter placeholder
 
     Override this to apply a default format function to all graphs and figures
     """
@@ -831,11 +840,7 @@ def _format_fig(fig, axes, formatter):
 class Figure:
     """Create figure given a set of graphs, for more information see plan_figure documentation"""
 
-    def __init__(self,
-                 title: str,
-                 graphs: List,
-                 formatter,
-                 out: str):
+    def __init__(self, title: str, graphs: List, formatter, out: str):
 
         self.title = title
         self.graphs = graphs
@@ -873,7 +878,7 @@ class Figure:
 __pdoc__["Figure"] = False
 
 
-def plan_figure(title: str, graph_layout: List[List[str]],  out: str, formatter=None):
+def plan_figure(title: str, graph_layout: List[List[str]], out: str, formatter=None):
     """Plan a figure given a set of graphs
     Arguments:
         title (str): Title of the figure
@@ -885,12 +890,12 @@ def plan_figure(title: str, graph_layout: List[List[str]],  out: str, formatter=
         >>> graph2 = plan_graph(...)
         >>> graph3 = plan_graph(...)
         >>> graph4 = plan_graph(...)
-        >>> 
+        >>>
         >>> def myformatter(fig, axes):
         >>>     # Axes here will be a list over a single object in the same layout
         >>>     # as the provided graph_layout argument.
         >>>     ...
-        >>> 
+        >>>
         >>> plan_figure("My Custom Graph",
         >>>             [[graph1, graph2], [graph3, graph4]],
         >>>             formatter = myformatter,
@@ -899,9 +904,9 @@ def plan_figure(title: str, graph_layout: List[List[str]],  out: str, formatter=
 
         The above example will create a figure that is layed out like the following:
 
-         Graph1  Graph2 
+         Graph1  Graph2
 
-         Graph3  Graph4 
+         Graph3  Graph4
     """
     _sb_figures.append(Figure(title, graph_layout, formatter, out))
     return _sb_figures[-1]

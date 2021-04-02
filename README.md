@@ -29,7 +29,7 @@ Viewing Graphs
 ------------
 Graphs are saved by default in the `graphs` directory of the current working directory.
 
-By passing the argument `-p PORT` to `progbe`, this will expose figures and graphs to be viewed by your browser
+By passing the argument `-p PORT` to `progbg`, this will expose figures and graphs to be viewed by your browser
 at `http://localhost:PORT`
 
 Author
