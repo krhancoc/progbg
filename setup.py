@@ -7,7 +7,7 @@ with open("README.md", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="progbg",
-    version="0.2",
+    version="0.3",
     author="Kenneth R Hancock",
     author_email="krhancoc@uwaterloo.ca",
     license="MIT",
