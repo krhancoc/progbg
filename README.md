@@ -13,6 +13,8 @@ More information and docs can be found [here](https://krhancoc.github.io/progbg/
 
 
 ![Sample Figure](samples/samplefig.svg)
+
+
 Installation
 ------------
 `progbg` can be installed through pip
