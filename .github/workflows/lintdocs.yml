@@ -1,0 +1,42 @@
+name: Lint & Generate Docs
+
+on: push
+
+jobs:
+    run-linters:
+        name: Run linters
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Check out Git repository
+              uses: actions/checkout@v2
+
+            - name: Set up Python
+              uses: actions/setup-python@v1
+              with:
+                python-version: 3.8
+
+            - name: Install Python dependencies
+              run: pip install black flake8
+
+            - name: Run linters
+              uses: wearerequired/lint-action@v1
+              with:
+                black: true
+                
+            - name: Generate Docs
+              run: |
+                ./scripts/generate_docs.sh
+                
+            - name: Commit
+              run: |
+                ./scripts/generate_docs.sh
+                git config --local user.email "autogen-docs[bots]@github.com"
+                git config --local user.name "autogen-docs-commit"
+                git commit -m "CI: Automated Docs" | exit 0
+                
+            - name: Push
+              if: github.ref == 'refs/heads/master'
+              uses: ad-m/github-push-action@master
+              with:
+                github_token: ${{ secrets.PROGBG_TOKEN }}
