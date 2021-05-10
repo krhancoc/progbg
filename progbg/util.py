@@ -6,34 +6,116 @@ import os
 from pprint import pformat
 from typing import List, Dict, Tuple
 
+from matplotlib.ticker import FuncFormatter
+
+import numpy as np
+import pandas as pd
+
 from .globals import _sb_rnames
 
+REQUIRED = object()
 
-def reformat_large(tick_val):
-    if tick_val >= 1000000000:
-        val = round(tick_val / 1000000000, 1)
-        new_tick_format = "{:}B".format(val)
-    elif tick_val >= 1000000:
-        val = round(tick_val / 1000000, 1)
-        new_tick_format = "{:}M".format(val)
-    elif tick_val >= 1000:
-        val = round(tick_val / 1000, 1)
-        new_tick_format = "{:}K".format(val)
-    else:
-        new_tick_format = tick_val
+class Metrics:
+    """Metrics collection object
 
-    new_tick_format = str(new_tick_format)
+    This object is given to executions to allow for users to specify what data
+    must be kept. The main functio that should be used by users is the add_metric
+    function, which simply appends data points to a list to be used to calculate
+    means and standard deviation later
+    """
 
-    index_of_decimal = new_tick_format.find(".")
-    if index_of_decimal != -1:
-        value_after_decimal = new_tick_format[index_of_decimal + 1]
-        if value_after_decimal == "0":
-            new_tick_format = (
-                new_tick_format[0:index_of_decimal]
-                + new_tick_format[index_of_decimal + 2 :]
-            )
+    def __init__(self):
+        self._vars = dict()
+        self._consts = dict()
 
-    return new_tick_format
+    def add_metric(self, key, val):
+        """Add a data point to a metric key
+
+        Args:
+            key (str): Key to add value to
+            val (int, float): value to append to a list
+
+        Example:
+            Suppose we have a parser we wish to use. This parser takes
+            both a metrics object and a file path.
+
+            >>> def my_parser(metrics: Metrics, out: str):
+            >>>     with open(out, 'r') as f:
+            >>>         mydata = f.read()
+            >>>         val = find_specific_value(mydata)
+            >>>         metrics.add_metric('my-stored-val', val)
+        """
+        if key not in self._vars:
+            self._vars[key] = [val]
+        else:
+            self._vars[key].append(val)
+
+    def to_file(self, path):
+        stats = self.get_stats()
+        with open(path, 'w') as f:
+            for k, val in stats.items():
+                f.write("{}={}\n".format(k, val))
+
+    def add_metrics(self, key, vals):
+        for v in vals:
+            self.add_metric(key, v)
+
+    def stat(self, key):
+        obj = self.get_stats()
+        return obj[key]
+
+    def __getitem__(self, key):
+        obj = self.get_stats()
+        if key in self._vars:
+            return self._vars[key]
+
+        return self._consts[key]
+    def __contains__(self, key):
+        return (key in self._vars) or (key in self._consts)
+
+    def add_constant(self, key, val):
+        """Add a constant to a metric object
+
+        Args:
+            key (str): Key for constant
+            val (obj): Value of this constant
+        """
+        self._consts[key] = val
+
+    def _combine(self, other: Dict):
+        for key, val in other._vars.items():
+            if key in self._vars:
+                self._vars[key].append(val)
+            else:
+                self._vars[key] = val
+
+    def get_stats(self):
+        """Returns the metrics object
+
+        Will return the current metrics of this object. Each associated
+        key will have its mean and standard deviation calculated.  Standard deviation
+        is stored within a "_std" key.
+
+        For example. If I had some metrics with associated key "my-metric". The returned
+        dictionary would store the mean at key "my-metrics", and store standard deviation
+        at key "my-metrics_std".  This allows users to also manually set standard deviation
+        of objects if needed. For example when using then `plan_parse` style executions.
+
+        Returns:
+            dict
+        """
+        obj = dict()
+        for key, val in self._vars.items():
+            obj[key] = np.mean(val)
+            obj[key + "_std"] = np.std(val)
+        for key, val in self._consts.items():
+            obj[key] = val
+
+        return obj
+
+    def __repr__(self):
+        obj = self.get_stats()
+        return pformat(obj)
 
 
 def normalize(group_list, index_to):
@@ -198,3 +280,70 @@ class Backend:
             or (self.path_out == path)
             or (self.path_user == path)
         )
+
+class ExecutionStub:
+    def __init__(self, **kwargs):
+        metric = Metrics()
+        for k, v in kwargs.items():
+            metric.add_constant(k, v)
+        self._cached = [metric]
+
+def set_size(w, h):
+    def format(fig, axes):
+        fig.set_figheight(h)
+        fig.set_figwidth(w)
+        fig.tight_layout()
+    return format
+
+def _axis_formatter(type, label="", tf=None):
+    units = dict(
+        p = 1e-12,
+        n = 1e-9,
+        u = 1e-6,
+        m = 1e-3,
+        c = 0.01,
+        d = 0.1,
+        S = 1.0,
+        da = 10.0,
+        h = 100.0,
+        k = float(10e3),
+        M = float(10e6),
+        G = float(10e9),
+        T = float(10e12)
+    )
+    def tmp_num(tf):
+        def number_formatter(number, pos=0):
+            if tf:
+                to_from = units[tf[0]] / units[tf[1]]
+                number = to_from * number
+            magnitude = 0
+            while (abs(number) >= 1000):
+                magnitude += 1
+                number /= 1000
+            return '%d%s' % (number, ['', 'k', 'M', 'B', 'T', 'Q'][magnitude])
+
+        return number_formatter
+
+
+    def format(fig, axes):
+        getattr(axes, type).set_major_formatter(FuncFormatter(tmp_num(tf)))
+        axes.set_ylabel(label)
+
+    return format
+
+def yaxis_formatter(label="", tf=None):
+    return _axis_formatter("yaxis", label, tf)
+
+def xaxis_formatter(label="", tf=None):
+    return _axis_formatter("xaxis", label, tf)
+
+def legend_remap(d):
+    def tmp(fig, axes):
+        h, labels = ax.get_legend_handles_labels()
+        l = [ d[l] for l in labels ]
+        ax.legend(h, l)
+
+    return tmp
+
+
+

@@ -12,7 +12,7 @@ For example a BarGraph could be given the style "hatch_a", or "color_b". Current
 not support hatches and colors cause I find this distracts readers of the data, but open to discussion.
 """
 import matplotlib as mpl
-from cycler import cycler
+from cycler import cycler, Cycler
 
 mpl.use("pgf")
 
@@ -41,6 +41,11 @@ _color_styles = dict(
         "#66a61e",
         "#e6ab02",
     ],  # Printer Friendly
+    bw=[
+        "#AAAAAA",
+        "#000000",
+    ],
+
 )
 
 _hatch_styles = dict(
@@ -49,8 +54,27 @@ _hatch_styles = dict(
 
 _line_styles = dict(a=["-", "-.", "--", "x", "s", "<", ",", "d"])
 
+progbg_default_style = {
+    "font.family": "serif",
+    "font.size": 10,
+    "axes.titlesize": 10,
+    "axes.labelsize": 9,
+    "xtick.labelsize": 9,
+    "ytick.labelsize": 9,
+    "legend.fontsize": 8,
+    "figure.titlesize": 10,
+    "pgf.texsystem": "pdflatex",
+    "pgf.rcfonts": False,
+    "text.usetex": True,
+    "errorbar.capsize": 1,
+}
 
-def get_style(style_name: str):
+_current_style = "color_a"
+
+def get_style():
+    return _current_style
+
+def set_style(style_name):
     """Get a style cycler
 
     Retrieve an iterable (cycler) object allowing to iterate over colors or hatches. Used by graphs
@@ -61,34 +85,23 @@ def get_style(style_name: str):
     Return
         Cycler object with either hatch or color set
     """
-
-    vals = style_name.split("_")
-    if vals[0] == "hatch":
-        style_list = _hatch_styles[vals[1]]
-        return cycler(hatch=style_list)
-    elif vals[0] == "line":
-        style_list = _line_styles[vals[1]]
-        return cycler(
-            color=["#000000"] * len(style_list),
-            linestyle=style_list,
-            linewidth=[1] * len(style_list),
-        )
+    _current_style = style_name
+    if not isinstance(style_name, Cycler):
+        vals = style_name.split("_")
+        if vals[0] == "hatch":
+            style_list = _hatch_styles[vals[1]]
+            c = cycler(hatch=style_list)
+        elif vals[0] == "line":
+            style_list = _line_styles[vals[1]]
+            c = cycler(
+                color=["#000000"] * len(style_list),
+                linestyle=style_list,
+                linewidth=[1] * len(style_list),
+            )
+        else:
+            c = cycler(color=_color_styles[vals[1]])
     else:
-        return cycler(color=_color_styles[vals[1]])
+        c = style_name
 
-
-progbg_default_style = {
-    "font.family": "serif",
-    "font.size": 10,
-    "axes.titlesize": 10,
-    "axes.labelsize": 10,
-    "xtick.labelsize": 9,
-    "ytick.labelsize": 9,
-    "legend.fontsize": 9,
-    "figure.titlesize": 10,
-    "pgf.texsystem": "pdflatex",
-    "pgf.rcfonts": False,
-    "axes.prop_cycle": get_style("color_a"),
-}
-
-mpl.rcParams.update(progbg_default_style)
+    progbg_default_style["axes.prop_cycle"] = c
+    mpl.rcParams.update(progbg_default_style)

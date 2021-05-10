@@ -22,101 +22,18 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from .util import Backend, Variables, error
+from .util import Backend, Variables, error, Metrics
+
+from .style import get_style, set_style
 
 from .globals import _sb_registered_benchmarks, _sb_registered_backend
 from .globals import _sb_executions, _sb_graphs, _sb_rnames
 from .globals import _sb_figures, GRAPHS_DIR
 from .globals import _EDIT_GLOBAL_TABLE
 
+from .globals import DEFAULT_SIZE
+
 __pdoc__ = {}
-
-
-class Metrics:
-    """Metrics collection object
-
-    This object is given to executions to allow for users to specify what data
-    must be kept. The main functio that should be used by users is the add_metric
-    function, which simply appends data points to a list to be used to calculate
-    means and standard deviation later
-    """
-
-    def __init__(self):
-        self._vars = dict()
-        self._consts = dict()
-
-    def add_metric(self, key, val):
-        """Add a data point to a metric key
-
-        Args:
-            key (str): Key to add value to
-            val (int, float): value to append to a list
-
-        Example:
-            Suppose we have a parser we wish to use. This parser takes
-            both a metrics object and a file path.
-
-            >>> def my_parser(metrics: Metrics, out: str):
-            >>>     with open(out, 'r') as f:
-            >>>         mydata = f.read()
-            >>>         val = find_specific_value(mydata)
-            >>>         metrics.add_metric('my-stored-val', val)
-        """
-        if key not in self._vars:
-            self._vars[key] = [val]
-        else:
-            self._vars[key].append(val)
-
-    def __getitem__(self, key):
-        if key in self._vars:
-            return self._vars[key]
-
-        return self._consts[key]
-
-    def add_constant(self, key, val):
-        """Add a constant to a metric object
-
-        Args:
-            key (str): Key for constant
-            val (obj): Value of this constant
-        """
-        self._consts[key] = val
-
-    def _combine(self, other: Dict):
-        for key, val in other._vars.items():
-            if key in self._vars:
-                self._vars[key].append(val)
-            else:
-                self._vars[key] = val
-
-    def get_stats(self):
-        """Returns the metrics object
-
-        Will return the current metrics of this object. Each associated
-        key will have its mean and standard deviation calculated.  Standard deviation
-        is stored within a "_std" key.
-
-        For example. If I had some metrics with associated key "my-metric". The returned
-        dictionary would store the mean at key "my-metrics", and store standard deviation
-        at key "my-metrics_std".  This allows users to also manually set standard deviation
-        of objects if needed. For example when using then `plan_parse` style executions.
-
-        Returns:
-            dict
-        """
-        obj = dict()
-        for key, val in self._vars.items():
-            obj[key] = np.mean(val)
-            obj[key + "_std"] = np.std(val)
-        for key, val in self._consts.items():
-            obj[key] = val
-
-        return obj
-
-    def __repr__(self):
-        obj = self.get_stats()
-        return pformat(obj)
-
 
 def _retrieve_named_backends(back_obj):
     named = []
@@ -226,13 +143,15 @@ class Execution:
         else:
             self.backends = [NullBackend()]
 
-        self.run_benchmarks = None
         self.out = out
         self.parser = parser
         self._cached = None
         self.name = (
             ",".join([back.name for back in self.backends]) + "-" + self.bench.name
         )
+
+    def varying(self):
+        return  [ x[0] for x in self.bench.variables.var ] + [ x[0] for back in self.backends for x in back.variables.var ]
 
     def print(self, string):
         """Pretty printer for execution"""
@@ -472,12 +391,13 @@ __pdoc__["NoBenchmark"] = False
 
 
 class ParseExecution:
-    def __init__(self, data: str, out_dir: str, func):
+    def __init__(self, name, data: str, out_dir: str, func):
         self._data = data
         self.out = out_dir
         self._func = func
         self.bench = NoBenchmark(self)
         self._cached = None
+        self.name = name
 
     def fields(self):
         return self._obj.keys()
@@ -490,6 +410,7 @@ class ParseExecution:
 
     def _parse_file(self, metrics, path: str, iter):
         self._func(metrics, path)
+        metrics.to_file(self.out + "/" + self.name)
 
     def parse(self):
         if self._cached:
@@ -517,7 +438,7 @@ class ParseExecution:
 __pdoc__["ParseExecution"] = False
 
 
-def plan_parse(file: str, parse_file_func, out_dir: str = None):
+def plan_parse(name: str, file: str, parse_file_func, out_dir: str = None):
     """Plan a parsing Execution
 
     Sometimes its not required to have progbg run actual benchmarks, and you may
@@ -538,7 +459,7 @@ def plan_parse(file: str, parse_file_func, out_dir: str = None):
         >>>     ...
         >>> exec = plan_parse("my_data.txt", my_text_parser)
     """
-    _sb_executions.append(ParseExecution(file, out_dir, parse_file_func))
+    _sb_executions.append(ParseExecution(name, file, out_dir, parse_file_func))
     return _sb_executions[-1]
 
 
@@ -832,20 +753,20 @@ def default_formatter(fig, axes):
 
 def _format_fig(fig, axes, formatter):
     if not formatter:
-        formatter = default_formatter
-
-    formatter(fig, axes)
+        formatter = [default_formatter]
+    for x in formatter:
+        x(fig, axes)
 
 
 class Figure:
     """Create figure given a set of graphs, for more information see plan_figure documentation"""
 
-    def __init__(self, title: str, graphs: List, formatter, out: str):
+    def __init__(self, out: str, graphs: List, gridspec_kw = dict()):
 
-        self.title = title
         self.graphs = graphs
-        self.formatter = formatter
+        self.gs = gridspec_kw
         self.out = out
+        self.html_out = ".".join(out.split(".")[:-1]) + ".svg"
 
     def print(self, strn: str) -> None:
         """Pretty print function"""
@@ -856,16 +777,13 @@ class Figure:
         self.print("Creating Figure")
         h = len(self.graphs)
         w = len(self.graphs[0])
-        fig, axes = plt.subplots(ncols=w, nrows=h, squeeze=False)
+        fig, axes = plt.subplots(ncols=w, nrows=h, squeeze=False, 
+                gridspec_kw=self.gs)
         for y in range(0, h):
             for x in range(0, w):
                 graph = self.graphs[y][x]
-                try:
-                    graph._graph(axes[y][x], silent=True)
-                except Exception as err:
-                    error("Problem with graph {}: {}".format(self.title, err))
+                graph.graph(fig, axes[y][x])
 
-        _format_fig(fig, axes, self.formatter)
         fig.tight_layout()
 
         out = os.path.join(GRAPHS_DIR, self.out)
@@ -874,11 +792,10 @@ class Figure:
             out = ".".join(out.split(".")[:-1]) + ".svg"
             plt.savefig(out)
 
-
 __pdoc__["Figure"] = False
 
-
-def plan_figure(title: str, graph_layout: List[List[str]], out: str, formatter=None):
+def plan_figure(out, graph_layout: List[List[str]],
+        gridspec_kw=dict()):
     """Plan a figure given a set of graphs
     Arguments:
         title (str): Title of the figure
@@ -908,7 +825,7 @@ def plan_figure(title: str, graph_layout: List[List[str]], out: str, formatter=N
 
          Graph3  Graph4
     """
-    _sb_figures.append(Figure(title, graph_layout, formatter, out))
+    _sb_figures.append(Figure(out, graph_layout, gridspec_kw))
     return _sb_figures[-1]
 
 
@@ -920,6 +837,8 @@ def execute_plan(plan: str, args):
         args (Namespace): Namespace of arguments (no_exec (bool))
     """
     import_plan(plan, globals())
+
+    set_style(get_style())
 
     if not args.no_exec:
         for execution in _sb_executions:
@@ -938,16 +857,14 @@ def execute_plan(plan: str, args):
         pass
 
     for graph in _sb_graphs:
-        if len(graph.out):
-            fig, axes = plt.subplots()
-            graph._graph(axes)
-            fig.tight_layout()
-            _format_fig(fig, axes, graph.formatter)
-            out = os.path.join(GRAPHS_DIR, graph.out)
-            try:
-                plt.savefig(out)
-            except:
-                print("Problem with output {}".format(out))
+        fig, axes = plt.subplots(figsize=DEFAULT_SIZE)
+        graph.graph(fig, axes)
+        out = os.path.join(GRAPHS_DIR, graph.out)
+        fig.tight_layout()
+        fig.subplots_adjust(left=0.35, right=0.95)
+        plt.savefig(out)
+        out = os.path.join(GRAPHS_DIR, graph.html_out)
+        plt.savefig(out)
 
     for fig in _sb_figures:
         fig.create()
