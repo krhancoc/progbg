@@ -12,6 +12,7 @@ from argparse import ArgumentParser
 from .core import execute_plan
 from .serve import create_server
 
+
 def cli_entry():
     """Main entry point for the command line interface"""
 
@@ -50,9 +51,8 @@ def cli_entry():
 
     if args.p:
         app = create_server(
-                globs["_sb_executions"],
-                globs["_sb_graphs"],
-                globs["_sb_figures"],
-                os.path.abspath("graphs"),
+            globs["_sb_executions"],
+            globs["_sb_graphs"],
+            globs["_sb_figures"],
+            os.path.abspath("graphs"),
         ).run(port=args.p, debug=True)
-

@@ -19,8 +19,7 @@ def create_server(executions, graphs, figures, graphs_dir: str):
         for e in executions:
             if isinstance(e, Execution):
                 print(e.varying())
-        return render_template("create_graph.html", graphs=graphs, 
-                figures=figures)
+        return render_template("create_graph.html", graphs=graphs, figures=figures)
 
     @app.route("/")
     def home():

@@ -1,5 +1,6 @@
 from ._graph import Graph
 
+
 class CustomGraph(Graph):
     def __init__(self, workloads, func, out, formatter=[], style="color_a"):
         self.workloads = workloads
@@ -8,7 +9,7 @@ class CustomGraph(Graph):
         self.style = style
         self.out = out
         self._opts = dict(
-            std = True,
+            std=True,
         )
         self.html_out = ".".join(out.split(".")[:-1]) + ".svg"
         self._restrict_on = {}

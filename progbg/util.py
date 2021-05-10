@@ -15,6 +15,7 @@ from .globals import _sb_rnames
 
 REQUIRED = object()
 
+
 class Metrics:
     """Metrics collection object
 
@@ -52,7 +53,7 @@ class Metrics:
 
     def to_file(self, path):
         stats = self.get_stats()
-        with open(path, 'w') as f:
+        with open(path, "w") as f:
             for k, val in stats.items():
                 f.write("{}={}\n".format(k, val))
 
@@ -70,6 +71,7 @@ class Metrics:
             return self._vars[key]
 
         return self._consts[key]
+
     def __contains__(self, key):
         return (key in self._vars) or (key in self._consts)
 
@@ -281,6 +283,7 @@ class Backend:
             or (self.path_user == path)
         )
 
+
 class ExecutionStub:
     def __init__(self, **kwargs):
         metric = Metrics()
@@ -288,42 +291,45 @@ class ExecutionStub:
             metric.add_constant(k, v)
         self._cached = [metric]
 
+
 def set_size(w, h):
     def format(fig, axes):
         fig.set_figheight(h)
         fig.set_figwidth(w)
         fig.tight_layout()
+
     return format
+
 
 def _axis_formatter(type, label="", tf=None):
     units = dict(
-        p = 1e-12,
-        n = 1e-9,
-        u = 1e-6,
-        m = 1e-3,
-        c = 0.01,
-        d = 0.1,
-        S = 1.0,
-        da = 10.0,
-        h = 100.0,
-        k = float(10e3),
-        M = float(10e6),
-        G = float(10e9),
-        T = float(10e12)
+        p=1e-12,
+        n=1e-9,
+        u=1e-6,
+        m=1e-3,
+        c=0.01,
+        d=0.1,
+        S=1.0,
+        da=10.0,
+        h=100.0,
+        k=float(10e3),
+        M=float(10e6),
+        G=float(10e9),
+        T=float(10e12),
     )
+
     def tmp_num(tf):
         def number_formatter(number, pos=0):
             if tf:
                 to_from = units[tf[0]] / units[tf[1]]
                 number = to_from * number
             magnitude = 0
-            while (abs(number) >= 1000):
+            while abs(number) >= 1000:
                 magnitude += 1
                 number /= 1000
-            return '%d%s' % (number, ['', 'k', 'M', 'B', 'T', 'Q'][magnitude])
+            return "%d%s" % (number, ["", "k", "M", "B", "T", "Q"][magnitude])
 
         return number_formatter
-
 
     def format(fig, axes):
         getattr(axes, type).set_major_formatter(FuncFormatter(tmp_num(tf)))
@@ -331,19 +337,19 @@ def _axis_formatter(type, label="", tf=None):
 
     return format
 
+
 def yaxis_formatter(label="", tf=None):
     return _axis_formatter("yaxis", label, tf)
+
 
 def xaxis_formatter(label="", tf=None):
     return _axis_formatter("xaxis", label, tf)
 
+
 def legend_remap(d):
     def tmp(fig, axes):
         h, labels = ax.get_legend_handles_labels()
-        l = [ d[l] for l in labels ]
+        l = [d[l] for l in labels]
         ax.legend(h, l)
 
     return tmp
-
-
-

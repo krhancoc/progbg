@@ -18,6 +18,7 @@ from ..util import Backend, retrieve_obj, error
 from ..util import ExecutionStub
 from ..style import get_style, set_style
 
+
 class ConstLine(GraphObject):
     def __init__(self, value, label, index, style=":"):
         self.label = label
@@ -27,7 +28,8 @@ class ConstLine(GraphObject):
 
     def get_data(self, restrict_on, opts):
         val = self.value._cached[0].get_stats()[self.index]
-        return (self.label,  val )
+        return (self.label, val)
+
 
 class Line(GraphObject):
     def __init__(self, workload, value: str, y, label: str = None, style="--"):
@@ -40,16 +42,13 @@ class Line(GraphObject):
         self.y = y
         self.style = style
 
-
     def get_data(self, restrict_on, opts):
-        d = {
-                self.label: [],
-                self.label + "_std":  []
-            }
+        d = {self.label: [], self.label + "_std": []}
         for x in self.workload:
             d[self.label].append(x._cached[0].get_stats()[self.value])
             d[self.label + "_std"].append(x._cached[0].get_stats()[self.value + "_std"])
         return pd.DataFrame(d, index=self.y)
+
 
 class LineGraph(Graph):
     """progbg Line Graph
@@ -100,7 +99,6 @@ class LineGraph(Graph):
         we need to isolate on one changing value for the line graph.
     """
 
-
     def __init__(self, lines, out, formatters=[], style="color_a"):
         self.workloads = []
         self.consts = []
@@ -118,23 +116,22 @@ class LineGraph(Graph):
         self.out = out
 
     def _graph(self, ax, data):
-        consts = [ x.get_data(self._restrict_on, self._opts) for x in 
-                self.consts ]
-        vals = [ x for x in data[0].T.columns]
-        styles = [ x.style for x in self.workloads ]
-        styles_consts = [ x.style for x in self.consts ]
+        consts = [x.get_data(self._restrict_on, self._opts) for x in self.consts]
+        vals = [x for x in data[0].T.columns]
+        styles = [x.style for x in self.workloads]
+        styles_consts = [x.style for x in self.consts]
 
-        data = pd.concat(data, axis = 1)
-        consts = [ pd.DataFrame({ c[0] : [c[1]] * len(vals) }, index=vals) for c in consts ]
+        data = pd.concat(data, axis=1)
+        consts = [pd.DataFrame({c[0]: [c[1]] * len(vals)}, index=vals) for c in consts]
         if len(consts):
-            consts = pd.concat(consts, axis = 1)
+            consts = pd.concat(consts, axis=1)
 
-        cols = [ c for c in data.columns if c[-4:] != "_std"]
-        cols_std = [ c for c in data.columns if len(c) > 4 and c[-4:] == "_std"]
+        cols = [c for c in data.columns if c[-4:] != "_std"]
+        cols_std = [c for c in data.columns if len(c) > 4 and c[-4:] == "_std"]
         d = data[cols]
         std = data[cols_std]
-        std.columns = [ x[:-4] for x in std.columns ]
-        y = [ x for x in d.T.columns ]
+        std.columns = [x[:-4] for x in std.columns]
+        y = [x for x in d.T.columns]
 
         tmp = iter(self.style)
         for i, x in enumerate(d.columns):
@@ -143,8 +140,7 @@ class LineGraph(Graph):
         if len(consts):
             for i, x in enumerate(consts.columns):
                 vl = next(tmp)
-                ax.plot(y, consts[x].tolist(), styles_consts[i], markersize=6, 
-                        **vl)
+                ax.plot(y, consts[x].tolist(), styles_consts[i], markersize=6, **vl)
 
         ylim = ax.get_ylim()
         ylim = (0, ylim[1])

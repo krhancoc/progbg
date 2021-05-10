@@ -35,6 +35,7 @@ from .globals import DEFAULT_SIZE
 
 __pdoc__ = {}
 
+
 def _retrieve_named_backends(back_obj):
     named = []
     for backend in back_obj.backends:
@@ -151,7 +152,9 @@ class Execution:
         )
 
     def varying(self):
-        return  [ x[0] for x in self.bench.variables.var ] + [ x[0] for back in self.backends for x in back.variables.var ]
+        return [x[0] for x in self.bench.variables.var] + [
+            x[0] for back in self.backends for x in back.variables.var
+        ]
 
     def print(self, string):
         """Pretty printer for execution"""
@@ -761,7 +764,7 @@ def _format_fig(fig, axes, formatter):
 class Figure:
     """Create figure given a set of graphs, for more information see plan_figure documentation"""
 
-    def __init__(self, out: str, graphs: List, gridspec_kw = dict()):
+    def __init__(self, out: str, graphs: List, gridspec_kw=dict()):
 
         self.graphs = graphs
         self.gs = gridspec_kw
@@ -777,8 +780,7 @@ class Figure:
         self.print("Creating Figure")
         h = len(self.graphs)
         w = len(self.graphs[0])
-        fig, axes = plt.subplots(ncols=w, nrows=h, squeeze=False, 
-                gridspec_kw=self.gs)
+        fig, axes = plt.subplots(ncols=w, nrows=h, squeeze=False, gridspec_kw=self.gs)
         for y in range(0, h):
             for x in range(0, w):
                 graph = self.graphs[y][x]
@@ -792,10 +794,11 @@ class Figure:
             out = ".".join(out.split(".")[:-1]) + ".svg"
             plt.savefig(out)
 
+
 __pdoc__["Figure"] = False
 
-def plan_figure(out, graph_layout: List[List[str]],
-        gridspec_kw=dict()):
+
+def plan_figure(out, graph_layout: List[List[str]], gridspec_kw=dict()):
     """Plan a figure given a set of graphs
     Arguments:
         title (str): Title of the figure

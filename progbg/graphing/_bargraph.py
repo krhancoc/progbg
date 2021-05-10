@@ -19,6 +19,7 @@ from ..util import Backend, retrieve_obj, error
 from ..util import ExecutionStub
 from ..style import get_style, set_style
 
+
 class Bar(GraphObject):
     """Bar object used within `BarGraph`
 
@@ -37,22 +38,17 @@ class Bar(GraphObject):
 
     def __init__(self, wl, composed_of, label):
 
-
         if isinstance(
             composed_of,
             str,
         ):
-            
 
             self.composed = [composed_of]
             if isinstance(wl, (int, float)):
-                d = { self.composed[0] : wl }
+                d = {self.composed[0]: wl}
                 wl = ExecutionStub(**d)
             if isinstance(wl, tuple):
-                d = { 
-                        self.composed[0] : wl[0],
-                        self.composed[0] + "_std" : wl[1]
-                    }
+                d = {self.composed[0]: wl[0], self.composed[0] + "_std": wl[1]}
                 wl = ExecutionStub(**d)
         else:
             self.composed = composed_of
@@ -78,7 +74,8 @@ class Bar(GraphObject):
         else:
             composed = self.composed
         label = self.label
-        return pd.DataFrame({ c: d[c] for c in composed }, index=self.label).T
+        return pd.DataFrame({c: d[c] for c in composed}, index=self.label).T
+
 
 class BarGroup(GraphObject):
     def __init__(self, wls, cat, label):
@@ -90,9 +87,9 @@ class BarGroup(GraphObject):
         bars = []
         for i, w in enumerate(self.wls):
             bars.append(Bar(w, self.cat, [self.label[i]]))
-        dfs =  [ b.get_data(restrict_on, opts).T for b in bars]
+        dfs = [b.get_data(restrict_on, opts).T for b in bars]
         return dfs
-    
+
     def bars(self):
         bars = []
         half = (len(self.wls) - 1 / 2) - 1
@@ -102,6 +99,7 @@ class BarGroup(GraphObject):
             else:
                 bars.append(Bar(w, self.cat, None))
         return bars
+
 
 class BarFactory:
     """Ease of use Factory Class
@@ -155,10 +153,11 @@ class BarGraph(Graph):
         >>>         out="custom.svg"
         >>>     )
     """
+
     def __init__(
         self,
         workloads: List,
-        group_labels = [],
+        group_labels=[],
         formatter=[],
         restrict_on=dict(),
         out: str = None,
@@ -173,10 +172,7 @@ class BarGraph(Graph):
         self._restrict_on = restrict_on
         self.kwargs = kwargs
         self.style = style
-        self._opts = dict(
-            std = std,
-            index = group_labels
-        )
+        self._opts = dict(std=std, index=group_labels)
         self.gl = group_labels
 
         if any([isinstance(x, BarGroup) for x in self.workloads]):
@@ -190,22 +186,21 @@ class BarGraph(Graph):
     def _graph(self, ax, data):
         if isinstance(self.workloads[0], BarGroup):
             # Retrieve top level labels
-            data = [ pd.concat(x) for x in data ]
+            data = [pd.concat(x) for x in data]
             data = pd.concat(data, axis=1)
-            cols = [ c for c in data.columns if c[-4:] != "_std"]
-            cols_std = [ c for c in data.columns if len(c) > 4 and c[-4:] == "_std"]
+            cols = [c for c in data.columns if c[-4:] != "_std"]
+            cols_std = [c for c in data.columns if len(c) > 4 and c[-4:] == "_std"]
             df = data[cols].T
             std = data[cols_std]
-            std.columns = [ x[:-4] for x in std.columns ]
+            std.columns = [x[:-4] for x in std.columns]
             std = std.T
-            df.plot.bar(rot=-90, ax=ax, yerr=std, capsize=4, 
-                    width=self.kwargs["width"])
+            df.plot.bar(rot=-90, ax=ax, yerr=std, capsize=4, width=self.kwargs["width"])
             if "log" in self.kwargs:
                 ax.set_yscale("log")
         else:
             data = pd.concat(data, axis=1).T
-            cols = [ c for c in data.columns if c[-4:] != "_std"]
-            cols_std = [ c for c in data.columns if len(c) > 4 and c[-4:] == "_std"]
+            cols = [c for c in data.columns if c[-4:] != "_std"]
+            cols_std = [c for c in data.columns if len(c) > 4 and c[-4:] == "_std"]
             df = data[cols]
             std = data[cols_std].T
             df.plot(rot=-90, kind="bar", stacked=True, ax=ax)

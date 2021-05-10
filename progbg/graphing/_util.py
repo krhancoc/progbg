@@ -18,6 +18,7 @@ from ..util import Backend, retrieve_obj, error
 from ..util import ExecutionStub
 from ..style import get_style, set_style
 
+
 def _is_good(benchmark, restriction):
     for key, val in restriction.items():
         if key not in benchmark:
@@ -148,5 +149,3 @@ def filter(metrics: List, restrict_dict: Dict):
         if all(item in metric.get_stats().items() for item in restrict_dict.items()):
             final_metric.append(metric)
     return final_metric
-
-

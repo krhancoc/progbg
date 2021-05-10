@@ -45,7 +45,6 @@ _color_styles = dict(
         "#AAAAAA",
         "#000000",
     ],
-
 )
 
 _hatch_styles = dict(
@@ -71,8 +70,10 @@ progbg_default_style = {
 
 _current_style = "color_a"
 
+
 def get_style():
     return _current_style
+
 
 def set_style(style_name):
     """Get a style cycler

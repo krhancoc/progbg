@@ -47,7 +47,7 @@ class MatchParser:
         return any([name in varfunc[0] for varfunc in self.match_rules.values()])
 
     def fields(self) -> List[str]:
-        """ Retrieve all named fields within the parser"""
+        """Retrieve all named fields within the parser"""
         return [item for sublist in self.match_rules.values() for item in sublist[0]]
 
     def parse(self, path, bench_args, backend_args) -> List:
@@ -93,7 +93,7 @@ class FileParser:
         return name in self.names
 
     def fields(self) -> List[str]:
-        """ Retrieve all named fields within the parser"""
+        """Retrieve all named fields within the parser"""
         return self.names
 
     def parse(self, path, bench_args, backend_args) -> List:

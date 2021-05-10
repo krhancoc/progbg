@@ -4,16 +4,17 @@ import pandas as pd
 from cycler import Cycler
 from ..style import get_style, set_style
 
-class GraphObject(ABC):
 
+class GraphObject(ABC):
     @abstractmethod
     def get_data(self):
         pass
 
+
 class Graph(ABC):
     def get_data(self, restrict_on, opts):
-        return [ y.get_data(restrict_on, opts) for y in self.workloads ]
-    
+        return [y.get_data(restrict_on, opts) for y in self.workloads]
+
     def graph(self, fig, ax):
 
         before = get_style()
@@ -34,4 +35,3 @@ class Graph(ABC):
     @abstractmethod
     def _graph(self, ax, data):
         pass
-
