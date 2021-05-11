@@ -55,4 +55,4 @@ def cli_entry():
             globs["_sb_graphs"],
             globs["_sb_figures"],
             os.path.abspath("graphs"),
-        ).run(port=args.p, debug=True)
+        ).run(port=args.p)

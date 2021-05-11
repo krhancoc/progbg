@@ -1,4 +1,6 @@
 import progbg as sb
+import progbg.graphing as graph
+
 import time
 from random import randint
 from cycler import cycler
@@ -42,11 +44,11 @@ class Wrk:
     @staticmethod
     def run(backend, outfile, test=5, x=10):
         # DO STUFF
-        avg = str(randint(1, 1000))
-        max = str(randint(500, 1000))
-        min = str(randint(1, 499))
+        min = str(randint(1, 100))
+        mid = str(randint(400, 600))
+        max = str(randint(700, 1000))
         vals = "{} {}\n".format(test, x)
-        strn = "Latency  {}  {}  {}".format(avg, max, min)
+        strn = "Latency  {}  {}  {}".format(min, mid, max)
         with open(outfile, "w") as out:
             out.write(vals)
             out.write(strn)
@@ -79,66 +81,60 @@ exec = sb.plan_execution(
     parser=file_func,
 )
 
-exec2 = sb.plan_parse("tests/test.txt", text_parser)
+exec2 = sb.plan_parse("exec1_parsed", "tests/test.txt", text_parser)
 
-bf = sb.BarFactory(exec)
+bf = graph.BarFactory(exec)
+
+
+
 graph1 = sb.plan_graph(
-    sb.BarGraph(
+    graph.BarGraph(
         [
-            [bf("low", "custom-label1"), bf(["low", "mid"]), bf("low")],
-            [bf("low"), bf("low")],
-            [bf("low"), bf(["low", "mid", "high"], "otherlabel")],
+            bf("low"), bf(["low", "mid", "high"])
         ],
-        group_labels=["yolo-1", "yolo-2", "yolo-3"],
         restrict_on={
             "pass_me_in": 0,
             "x": 0,
         },
         width=0.5,
         out="test.svg",
-        title="Sample BarGraph",
         style="hatch_a",
     )
 )
 
-line1 = sb.Line(exec, "low", label="Low Label")
-line2 = sb.Line(exec, "mid", label="Mid Label")
-line3 = sb.Line(exec, "high", label="High Label")
+line1 = graph.Line(exec, "low", x="x", label="Low Label")
+line2 = graph.Line(exec, "mid", x="x", label="Mid Label")
+line3 = graph.Line(exec, "high", x="x", label="High Label")
 
 graph2 = sb.plan_graph(
-    sb.LineGraph(
+    graph.LineGraph(
         [line1, line2, line3],
-        "x",
         restrict_on={
             "pass_me_in": 0,
         },
         out="line.svg",
-        title="Sample Line Graph",
         style="color_b",
     )
 )
-line1 = sb.Line(exec, "low", linestyle="dotted")
-line2 = sb.Line(exec, "mid", label="Mid Label")
-line3 = sb.Line(exec, "high", label="High Label")
+line1 = graph.Line(exec, "low", x="x", style="--")
+line2 = graph.Line(exec, "mid", x="x", label="Mid Label")
+line3 = graph.Line(exec, "high", x="x", label="High Label")
 
 cdf_graph = sb.plan_graph(
-    sb.LineGraph(
+    graph.LineGraph(
         [line1, line2, line3],
-        "x",
         restrict_on={
             "pass_me_in": 0,
         },
         type="cdf",
-        out="cdf.svg",
-        title="CDF",
         style="line_a",
+        out="cdf.svg",
     )
 )
 
 custom_style_graph = sb.plan_graph(
-    sb.LineGraph(
+    graph.LineGraph(
         [line1, line2],
-        "x",
         restrict_on={
             "pass_me_in": 0,
         },
@@ -151,5 +147,5 @@ custom_style_graph = sb.plan_graph(
 
 
 sb.plan_figure(
-    "Final Figure", [[graph1, graph2], [cdf_graph, custom_style_graph]], out="final.svg"
+    "figure.pgf", [[graph1, graph2], [cdf_graph, custom_style_graph]]
 )

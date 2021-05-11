@@ -23,9 +23,6 @@ def create_server(executions, graphs, figures, graphs_dir: str):
 
     @app.route("/")
     def home():
-        for e in executions:
-            if isinstance(e, Execution):
-                print(e.get_varying())
         return render_template("index.html", graphs=graphs, figures=figures)
 
     @app.route("/data/<graph_index>")

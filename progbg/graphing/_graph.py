@@ -12,8 +12,19 @@ class GraphObject(ABC):
 
 
 class Graph(ABC):
-    def get_data(self, restrict_on, opts):
-        return [y.get_data(restrict_on, opts) for y in self.workloads]
+    def __init__(self, *args, **kwargs):
+        default_options = dict(
+            _restrict_on=dict(),
+            formatters=[],
+            style="color_a",
+            out=None,
+        )
+
+        for p, default in default_options.items():
+            setattr(self, p, kwargs.get(p, default))
+
+    def get_data(self, restrict_on):
+        return [y.get_data(restrict_on) for y in self.workloads]
 
     def graph(self, fig, ax):
 
@@ -22,7 +33,7 @@ class Graph(ABC):
         if self.style:
             set_style(self.style)
 
-        data = self.get_data(self._restrict_on, self._opts)
+        data = self.get_data(self._restrict_on)
         self._graph(ax, data)
         self.format(fig, ax)
 

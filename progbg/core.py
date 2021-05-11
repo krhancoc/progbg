@@ -413,7 +413,8 @@ class ParseExecution:
 
     def _parse_file(self, metrics, path: str, iter):
         self._func(metrics, path)
-        metrics.to_file(self.out + "/" + self.name)
+        if self.out is not None:
+            metrics.to_file(self.out + "/" + self.name)
 
     def parse(self):
         if self._cached:
@@ -450,6 +451,7 @@ def plan_parse(name: str, file: str, parse_file_func, out_dir: str = None):
     integrate it into graphs.
 
     Args:
+        name (str): Unique Name for the planned parsing execution.
         file (str): File to be parsed and sent to the parse_file_func argument
         parse_file_func (Function): Function to parse the data of the file argument
         out_dir (str, optional): Directory to place parsed data
@@ -460,7 +462,7 @@ def plan_parse(name: str, file: str, parse_file_func, out_dir: str = None):
     Example:
         >>> def my_text_parser(metrics: Metrics, out_file: str):
         >>>     ...
-        >>> exec = plan_parse("my_data.txt", my_text_parser)
+        >>> exec = plan_parse("exec_name", "my_data.txt", my_text_parser)
     """
     _sb_executions.append(ParseExecution(name, file, out_dir, parse_file_func))
     return _sb_executions[-1]

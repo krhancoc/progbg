@@ -51,7 +51,7 @@ _hatch_styles = dict(
     a=["**", "++", "//", "xx", "oo"],
 )
 
-_line_styles = dict(a=["-", "-.", "--", "x", "s", "<", ",", "d"])
+_line_styles = dict(a=["-", "-.", "--", ":"])
 
 progbg_default_style = {
     "font.family": "serif",
@@ -73,6 +73,10 @@ _current_style = "color_a"
 
 def get_style():
     return _current_style
+
+
+def get_style_cycler():
+    return progbg_default_style["axes.prop_cycle"]
 
 
 def set_style(style_name):

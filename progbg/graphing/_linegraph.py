@@ -10,13 +10,12 @@ import numpy as np
 from cycler import cycler, Cycler
 
 from ._graph import Graph, GraphObject
+from ._util import filter
 
 from ..globals import _sb_executions
-from ..subr import retrieve_axes, check_one_varying
-from ..subr import aggregate_bench, aggregate_list
 from ..util import Backend, retrieve_obj, error
 from ..util import ExecutionStub
-from ..style import get_style, set_style
+from ..style import get_style, set_style, get_style_cycler
 
 
 class ConstLine(GraphObject):
@@ -26,28 +25,39 @@ class ConstLine(GraphObject):
         self.index = index
         self.style = style
 
-    def get_data(self, restrict_on, opts):
+    def get_data(self, restrict_on):
         val = self.value._cached[0].get_stats()[self.index]
         return (self.label, val)
 
 
 class Line(GraphObject):
-    def __init__(self, workload, value: str, y, label: str = None, style="--"):
+    def __init__(self, workload, value: str, x=None, label: str = None, style="--"):
         if label:
             self.label = label
         else:
             self.label = value
         self.value = value
         self.workload = workload
-        self.y = y
+        self.x = x
         self.style = style
 
-    def get_data(self, restrict_on, opts):
+    def get_data(self, restrict_on, iter=None):
         d = {self.label: [], self.label + "_std": []}
-        for x in self.workload:
-            d[self.label].append(x._cached[0].get_stats()[self.value])
-            d[self.label + "_std"].append(x._cached[0].get_stats()[self.value + "_std"])
-        return pd.DataFrame(d, index=self.y)
+        if isinstance(self.workload, list):
+            for x in self.workload:
+                d[self.label].append(x._cached[0].get_stats()[self.value])
+                d[self.label + "_std"].append(
+                    x._cached[0].get_stats()[self.value + "_std"]
+                )
+
+            return pd.DataFrame(d, index=self.x)
+        else:
+            metrics = filter(self.workload._cached, restrict_on)
+            dicts = [d.get_stats() for d in metrics]
+            df = pd.DataFrame(dicts)
+            df = df.groupby([self.x])
+
+            return pd.DataFrame(df.mean()[[self.value, self.value + "_std"]])
 
 
 class LineGraph(Graph):
@@ -55,7 +65,6 @@ class LineGraph(Graph):
 
     Args:
         lines (List[Line]): Workloads that the line graph will use in the WRK:BCK1/BCK2 format
-        x (str): This is the variable you will be tracking.
         type (str) (Function, optional): Type of line graph (default, cdf)
         style (str, cycler): Style string for progbg styles or a cycler object to dictate custom style of lines
         formatter (Function, optional): Formatter to be used on the graph once the graph is complete
@@ -99,33 +108,43 @@ class LineGraph(Graph):
         we need to isolate on one changing value for the line graph.
     """
 
-    def __init__(self, lines, out, formatters=[], style="color_a"):
-        self.workloads = []
+    def __init__(self, lines, **kwargs):
+        super().__init__(**kwargs)
+
+        default_options = dict(
+            std=False,
+            group_labels=[],
+            log=False,
+            width=0.5,
+        )
+
+        for prop, default in default_options.items():
+            setattr(self, prop, kwargs.get(prop, default))
+
         self.consts = []
+        self.workloads = []
         for c in lines:
             if isinstance(c, ConstLine):
                 self.consts.append(c)
             else:
                 self.workloads.append(c)
-        self._restrict_on = {}
-        self._opts = {}
-        self.html_out = ".".join(out.split(".")[:-1]) + ".svg"
-        self.formatter = formatters
-        self.formatters = formatters
-        self.style = style
-        self.out = out
+
+        self.html_out = ".".join(self.out.split(".")[:-1]) + ".svg"
 
     def _graph(self, ax, data):
-        consts = [x.get_data(self._restrict_on, self._opts) for x in self.consts]
+        # Hack for dealing with const lines.
+        consts = [x.get_data(self._restrict_on) for x in self.consts]
         vals = [x for x in data[0].T.columns]
         styles = [x.style for x in self.workloads]
         styles_consts = [x.style for x in self.consts]
 
+        # Combine data
         data = pd.concat(data, axis=1)
         consts = [pd.DataFrame({c[0]: [c[1]] * len(vals)}, index=vals) for c in consts]
         if len(consts):
             consts = pd.concat(consts, axis=1)
 
+        # Pull out the standard deviation and such
         cols = [c for c in data.columns if c[-4:] != "_std"]
         cols_std = [c for c in data.columns if len(c) > 4 and c[-4:] == "_std"]
         d = data[cols]
@@ -133,15 +152,15 @@ class LineGraph(Graph):
         std.columns = [x[:-4] for x in std.columns]
         y = [x for x in d.T.columns]
 
-        tmp = iter(self.style)
+        # It seems like styles is not respected setting them so we will manually do them
+        style = iter(get_style_cycler())
         for i, x in enumerate(d.columns):
-            vl = next(tmp)
-            ax.errorbar(y, d[x].tolist(), fmt=styles[i], yerr=std[x], linewidth=1, **vl)
+            tmp = next(style)
+            if self.std:
+                ax.errorbar(y, d[x].tolist(), yerr=std[x], **tmp)
+            else:
+                ax.plot(y, d[x].tolist(), styles[i], **tmp)
         if len(consts):
             for i, x in enumerate(consts.columns):
-                vl = next(tmp)
-                ax.plot(y, consts[x].tolist(), styles_consts[i], markersize=6, **vl)
-
-        ylim = ax.get_ylim()
-        ylim = (0, ylim[1])
-        ax.set_ylim(ylim)
+                tmp = next(style)
+                ax.plot(y, consts[x].tolist(), **tmp)

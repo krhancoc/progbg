@@ -13,8 +13,6 @@ from ._util import filter, axis_kwargs
 from ._graph import Graph, GraphObject
 
 from ..globals import _sb_executions
-from ..subr import retrieve_axes, check_one_varying
-from ..subr import aggregate_bench, aggregate_list
 from ..util import Backend, retrieve_obj, error
 from ..util import ExecutionStub
 from ..style import get_style, set_style
@@ -64,15 +62,12 @@ class Bar(GraphObject):
         if label is None:
             self.label = [""]
 
-    def get_data(self, restrict_on, opts):
+    def get_data(self, restrict_on):
         d = filter(self.workload._cached, restrict_on)[0].get_stats()
-        if "std" in opts and opts["std"]:
-            composed = []
-            for c in self.composed:
-                composed.append(c)
-                composed.append(c + "_std")
-        else:
-            composed = self.composed
+        composed = []
+        for c in self.composed:
+            composed.append(c)
+            composed.append(c + "_std")
         label = self.label
         return pd.DataFrame({c: d[c] for c in composed}, index=self.label).T
 
@@ -83,11 +78,11 @@ class BarGroup(GraphObject):
         self.cat = cat
         self.label = label
 
-    def get_data(self, restrict_on, opts):
+    def get_data(self, restrict_on):
         bars = []
         for i, w in enumerate(self.wls):
             bars.append(Bar(w, self.cat, [self.label[i]]))
-        dfs = [b.get_data(restrict_on, opts).T for b in bars]
+        dfs = [b.get_data(restrict_on).T for b in bars]
         return dfs
 
     def bars(self):
@@ -154,34 +149,21 @@ class BarGraph(Graph):
         >>>     )
     """
 
-    def __init__(
-        self,
-        workloads: List,
-        group_labels=[],
-        formatter=[],
-        restrict_on=dict(),
-        out: str = None,
-        std=True,
-        style="color_a",
-        **kwargs
-    ):
-        self.workloads = workloads.copy()
-        self.out = out
-        self.html_out = ".".join(out.split(".")[:-1]) + ".svg"
-        self.aggregation = None
-        self._restrict_on = restrict_on
-        self.kwargs = kwargs
-        self.style = style
-        self._opts = dict(std=std, index=group_labels)
-        self.gl = group_labels
+    def __init__(self, workloads: List, **kwargs):
+        super().__init__(**kwargs)
 
-        if any([isinstance(x, BarGroup) for x in self.workloads]):
-            self.group_bars = True
-        else:
-            self.group_bars = False
+        default_options = dict(
+            std=True,
+            group_labels=[],
+            log=False,
+            width=0.5,
+        )
 
-        self.formatters = formatter
-        self.formatter = formatter
+        for prop, default in default_options.items():
+            setattr(self, prop, kwargs.get(prop, default))
+
+        self.workloads = workloads
+        self.html_out = ".".join(self.out.split(".")[:-1]) + ".svg"
 
     def _graph(self, ax, data):
         if isinstance(self.workloads[0], BarGroup):
@@ -194,8 +176,8 @@ class BarGraph(Graph):
             std = data[cols_std]
             std.columns = [x[:-4] for x in std.columns]
             std = std.T
-            df.plot.bar(rot=-90, ax=ax, yerr=std, capsize=4, width=self.kwargs["width"])
-            if "log" in self.kwargs:
+            df.plot.bar(rot=-90, ax=ax, yerr=std, capsize=4, width=self.width)
+            if self.log:
                 ax.set_yscale("log")
         else:
             data = pd.concat(data, axis=1).T

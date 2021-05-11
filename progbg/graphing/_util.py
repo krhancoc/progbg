@@ -12,8 +12,6 @@ import numpy as np
 from cycler import cycler, Cycler
 
 from ..globals import _sb_executions
-from ..subr import retrieve_axes, check_one_varying
-from ..subr import aggregate_bench, aggregate_list
 from ..util import Backend, retrieve_obj, error
 from ..util import ExecutionStub
 from ..style import get_style, set_style
