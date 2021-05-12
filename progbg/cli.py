@@ -6,6 +6,7 @@ and dispatches commands to the proper area
 # pylint: disable-msg=E0611,E0401
 
 import os
+
 from argparse import ArgumentParser
 
 from .core import execute_plan
@@ -49,7 +50,7 @@ def cli_entry():
     globs = execute_plan(args.plan, args)
 
     if args.p:
-        create_server(
+        app = create_server(
             globs["_sb_executions"],
             globs["_sb_graphs"],
             globs["_sb_figures"],

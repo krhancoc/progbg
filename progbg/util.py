@@ -1,39 +1,121 @@
 """Utility function and classes used throughout progbg"""
-
 import itertools
 import sys
 import os
 from pprint import pformat
 from typing import List, Dict, Tuple
 
+
+import numpy as np
+import pandas as pd
+
 from .globals import _sb_rnames
 
+REQUIRED = object()
 
-def reformat_large(tick_val):
-    if tick_val >= 1000000000:
-        val = round(tick_val / 1000000000, 1)
-        new_tick_format = "{:}B".format(val)
-    elif tick_val >= 1000000:
-        val = round(tick_val / 1000000, 1)
-        new_tick_format = "{:}M".format(val)
-    elif tick_val >= 1000:
-        val = round(tick_val / 1000, 1)
-        new_tick_format = "{:}K".format(val)
-    else:
-        new_tick_format = tick_val
 
-    new_tick_format = str(new_tick_format)
+class Metrics:
+    """Metrics collection object
 
-    index_of_decimal = new_tick_format.find(".")
-    if index_of_decimal != -1:
-        value_after_decimal = new_tick_format[index_of_decimal + 1]
-        if value_after_decimal == "0":
-            new_tick_format = (
-                new_tick_format[0:index_of_decimal]
-                + new_tick_format[index_of_decimal + 2 :]
-            )
+    This object is given to executions to allow for users to specify what data
+    must be kept. The main functio that should be used by users is the add_metric
+    function, which simply appends data points to a list to be used to calculate
+    means and standard deviation later
+    """
 
-    return new_tick_format
+    def __init__(self):
+        self._vars = dict()
+        self._consts = dict()
+
+    def add_metric(self, key, val):
+        """Add a data point to a metric key
+
+        Args:
+            key (str): Key to add value to
+            val (int, float): value to append to a list
+
+        Example:
+            Suppose we have a parser we wish to use. This parser takes
+            both a metrics object and a file path.
+
+            >>> def my_parser(metrics: Metrics, out: str):
+            >>>     with open(out, 'r') as f:
+            >>>         mydata = f.read()
+            >>>         val = find_specific_value(mydata)
+            >>>         metrics.add_metric('my-stored-val', val)
+        """
+        if key not in self._vars:
+            self._vars[key] = [val]
+        else:
+            self._vars[key].append(val)
+
+    def to_file(self, path):
+        stats = self.get_stats()
+        with open(path, "w") as f:
+            for k, val in stats.items():
+                f.write("{}={}\n".format(k, val))
+
+    def add_metrics(self, key, vals):
+        for v in vals:
+            self.add_metric(key, v)
+
+    def stat(self, key):
+        obj = self.get_stats()
+        return obj[key]
+
+    def __getitem__(self, key):
+        obj = self.get_stats()
+        if key in self._vars:
+            return self._vars[key]
+
+        return self._consts[key]
+
+    def __contains__(self, key):
+        return (key in self._vars) or (key in self._consts)
+
+    def add_constant(self, key, val):
+        """Add a constant to a metric object
+
+        Args:
+            key (str): Key for constant
+            val (obj): Value of this constant
+        """
+        self._consts[key] = val
+
+    def _combine(self, other: Dict):
+        for key, val in other._vars.items():
+            if key in self._vars:
+                self._vars[key].append(val)
+            else:
+                self._vars[key] = val
+
+    def get_stats(self):
+        """Returns the metrics object
+
+        Will return the current metrics of this object. Each associated
+        key will have its mean and standard deviation calculated.  Standard deviation
+        is stored within a "_std" key.
+
+        For example. If I had some metrics with associated key "my-metric". The returned
+        dictionary would store the mean at key "my-metrics", and store standard deviation
+        at key "my-metrics_std".  This allows users to also manually set standard deviation
+        of objects if needed. For example when using then `plan_parse` style executions.
+
+        Returns:
+            dict
+        """
+        obj = dict()
+        for key, val in self._vars.items():
+            obj[key] = np.mean(val)
+            obj[key + "_std"] = np.std(val)
+        for key, val in self._consts.items():
+            obj[key] = val
+
+        return obj
+
+    def __repr__(self):
+        obj = self.get_stats()
+        return pformat(obj)
 
 
 def normalize(group_list, index_to):
@@ -198,3 +280,11 @@ class Backend:
             or (self.path_out == path)
             or (self.path_user == path)
         )
+
+
+class ExecutionStub:
+    def __init__(self, **kwargs):
+        metric = Metrics()
+        for k, v in kwargs.items():
+            metric.add_constant(k, v)
+        self._cached = [metric]

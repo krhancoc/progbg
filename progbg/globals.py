@@ -5,6 +5,7 @@ _sb_registered_backend = {}
 _sb_executions = []
 _sb_graphs = []
 _sb_figures = []
+DEFAULT_SIZE = (3, 2.8)
 """Registration globals
 
 These globals are used by the plan_* functions, as well as the
@@ -23,6 +24,7 @@ _EDIT_GLOBAL_TABLE = {
     "_sb_executions": _sb_executions,
     "_sb_graphs": _sb_graphs,
     "_sb_figures": _sb_figures,
+    "DEFAULT_SIZE": DEFAULT_SIZE,
 }
 """Globals Table
 

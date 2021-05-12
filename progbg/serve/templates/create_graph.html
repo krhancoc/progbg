@@ -5,17 +5,17 @@
 
 {% block content %}
 
-<h2> Graphs </h1>
+<h2> Create Graph </h1>
 {% for graph in graphs %}
 <h3>{{graph.out}}</h1>
-<a href="data/{{loop.index - 1}}"><img src="graphs/{{graph.html_out}}" border="1"></a>
+<a href="data/{{loop.index - 1}}"><img src="graphs/{{graph.out}}"></a>
 {% endfor %}
 
 
 <h2> Figures </h1>
 {% for graph in figures %}
 <h3>{{graph.out}}</h1>
-<img src="graphs/{{graph.html_out}}" border="1">
+<img src="graphs/{{graph.out}}">
 {% endfor %}
 
 {% endblock %}
