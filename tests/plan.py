@@ -132,7 +132,7 @@ cdf_graph = sb.plan_graph(
     )
 )
 
-custom_style_graph = sb.plan_graph(
+custom_graph = sb.plan_graph(
     graph.LineGraph(
         [line1, line2],
         restrict_on={
@@ -147,5 +147,9 @@ custom_style_graph = sb.plan_graph(
 
 
 sb.plan_figure(
-    "figure.pgf", [[graph1, graph2], [cdf_graph, custom_style_graph]]
+    "figure.pgf", 
+    [
+        [graph1,     graph1,       graph1], 
+        [cdf_graph,  custom_graph, custom_graph],
+        [cdf_graph,  custom_graph, custom_graph]]
 )

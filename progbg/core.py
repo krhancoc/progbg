@@ -19,6 +19,8 @@ from typing import List, Dict
 from pprint import pformat
 
 import matplotlib.pyplot as plt
+from matplotlib.gridspec import GridSpec
+
 import numpy as np
 import pandas as pd
 
@@ -581,7 +583,6 @@ def plan_graph(graphobj):
     Args:
         graphobj (obj): Specified graph to use
 
-
     Example:
         >>> exec1 = plan_execution(...)
         >>> exec2 = plan_execution(...)
@@ -766,27 +767,53 @@ def _format_fig(fig, axes, formatter):
 class Figure:
     """Create figure given a set of graphs, for more information see plan_figure documentation"""
 
-    def __init__(self, out: str, graphs: List, gridspec_kw=dict()):
+    def __init__(self, out: str, graphs: List):
 
         self.graphs = graphs
-        self.gs = gridspec_kw
         self.out = out
         self.html_out = ".".join(out.split(".")[:-1]) + ".svg"
+        self.h = len(self.graphs)
+        self.w = len(self.graphs[0])
 
     def print(self, strn: str) -> None:
         """Pretty print function"""
         print("\033[1;35m[{}]:\033[0m {}".format(self.out, strn))
 
+    def _find_stretch(self, graph, x_start, y_start):
+        cur_x = x_start
+        cur_y = y_start
+        # Find x streth
+        while (cur_x < self.w) and self.graphs[y_start][cur_x] is graph:
+            cur_x += 1
+
+        while (cur_y < self.h) and self.graphs[cur_y][x_start] is graph:
+            cur_y += 1
+
+        return (cur_x - 1, cur_y - 1)
+
     def create(self):
         """Create the figure"""
         self.print("Creating Figure")
-        h = len(self.graphs)
-        w = len(self.graphs[0])
-        fig, axes = plt.subplots(ncols=w, nrows=h, squeeze=False, gridspec_kw=self.gs)
-        for y in range(0, h):
-            for x in range(0, w):
-                graph = self.graphs[y][x]
-                graph.graph(fig, axes[y][x])
+        fig = plt.figure()
+        gs = GridSpec(self.h, self.w, figure=fig)
+        found = dict()
+        # Span the graphs Matrix. Assumptions made:
+        # 1. No duplicate graphs within a figure.
+        # 2. Graphs are always rectangles
+        # With this we can start in the top left and scan the NxM graph matrix
+        # When we find a new graph we know this is a corner of the new graph as we
+        # always start from the left most edge, and top most edge. We then check the bounds
+        # and push these bounds into a dictionary
+        for r in range(0, self.h):
+            for c in range(0, self.w):
+                if self.graphs[r][c] not in found.keys():
+                    g = self.graphs[r][c]
+                    x, y = self._find_stretch(g, c, r)
+                    found[g] = (c, x, r, y)
+
+        for k, v in found.items():
+            ax = fig.add_subplot(gs[v[2] : v[3] + 1, v[0] : v[1] + 1])
+            k.graph(fig, ax)
 
         fig.tight_layout()
 
@@ -800,13 +827,11 @@ class Figure:
 __pdoc__["Figure"] = False
 
 
-def plan_figure(out, graph_layout: List[List[str]], gridspec_kw=dict()):
+def plan_figure(out, graph_layout: List[List[str]]):
     """Plan a figure given a set of graphs
     Arguments:
-        title (str): Title of the figure
+        out (str): output name for the figure - used as an ID.
         graph_layout (List[List]): An M by N matrix that defines figure layout.
-        formatter (Function): Function for custom formatting.
-        out (str): output name for the figure.
     Examples:
         >>> graph1 = plan_graph(...)
         >>> graph2 = plan_graph(...)
@@ -818,10 +843,10 @@ def plan_figure(out, graph_layout: List[List[str]], gridspec_kw=dict()):
         >>>     # as the provided graph_layout argument.
         >>>     ...
         >>>
-        >>> plan_figure("My Custom Graph",
-        >>>             [[graph1, graph2], [graph3, graph4]],
-        >>>             formatter = myformatter,
-        >>>             out = "myfigure.svg"
+        >>> plan_figure("graph-fig.pgf",
+        >>>             [
+        >>>                 [graph1, graph2],
+        >>>                 [graph3, graph4]],
         >>> )
 
         The above example will create a figure that is layed out like the following:
@@ -829,8 +854,24 @@ def plan_figure(out, graph_layout: List[List[str]], gridspec_kw=dict()):
          Graph1  Graph2
 
          Graph3  Graph4
+
+        Graph variables can be used as a way to identify size of figures in relation to each other
+        for example:
+
+        >>> plan_figure(
+        >>>     "figure.pgf", 
+        >>>     [
+        >>>         [graph1,     graph1,       graph1], 
+        >>>         [cdf_graph,  custom_graph, custom_graph],
+        >>>         [cdf_graph,  custom_graph, custom_graph]
+        >>>     ]
+        >>> )
+
+        Produces a figure in which graph1 spans the top (3 units wide) of the figure, with cdf_graph and
+        custom_graph below it. cdf_graph is a 2 units tall graph sitting to the left of custom_graph
+        which is 2 units wide and 2 units tall graph within the figure
     """
-    _sb_figures.append(Figure(out, graph_layout, gridspec_kw))
+    _sb_figures.append(Figure(out, graph_layout))
     return _sb_figures[-1]
 
 
