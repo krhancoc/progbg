@@ -31,7 +31,18 @@
 
 from ._bargraph import BarGraph, Bar, BarFactory, BarGroup
 from ._custom import CustomGraph
-from ._linegraph import Line, LineGraph, ConstLine</code></pre>
+from ._linegraph import Line, LineGraph, ConstLine
+
+__all__ = [
+    &#34;BarGraph&#34;,
+    &#34;Bar&#34;,
+    &#34;BarFactory&#34;,
+    &#34;BarGroup&#34;,
+    &#34;CustomGraph&#34;,
+    &#34;Line&#34;,
+    &#34;LineGraph&#34;,
+    &#34;ConstLine&#34;,
+]</code></pre>
 </details>
 </section>
 <section>
@@ -41,6 +52,762 @@ from ._linegraph import Line, LineGraph, ConstLine</code></pre>
 <section>
 </section>
 <section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="progbg.graphing.Bar"><code class="flex name class">
+<span>class <span class="ident">Bar</span></span>
+<span>(</span><span>wl, composed_of, label=None)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Bar object used within <code><a title="progbg.graphing.BarGraph" href="#progbg.graphing.BarGraph">BarGraph</a></code></p>
+<p>This represent a bar within a bar graph.
+Its construction used an execution object.
+Once an execution is done, metrics objects are pulled and summarized into means and standard
+deviations.</p>
+<p>The keys within the <code>core.Metrics</code> are used to compose bars.
+You may select just one.
+But optionally you may compose bars of many metrics (See matplotlibs stacked bar).</p>
+<h2 id="arguments">Arguments</h2>
+<p>wl (Execution, List):
+Execution object or list for constant values
+composed_of (List): A key for the data to use, or optionally a list of keys
+label (str): Label of the bar</p>
+<h2 id="example">Example</h2>
+<pre><code class="language-python-repl">&gt;&gt;&gt; e1 = plan_execution(...)
+&gt;&gt;&gt; e2 = plan_execution(...)
+&gt;&gt;&gt; e3 = plan_execution(...)
+&gt;&gt;&gt;
+&gt;&gt;&gt; b1 = Bar(e1, [&quot;data1&quot;, &quot;data2&quot;])
+&gt;&gt;&gt;
+&gt;&gt;&gt; # Below Bar: data1 = 10, data2 = 22
+&gt;&gt;&gt; b1 = Bar([10, 22], [&quot;data1&quot;, &quot;data2&quot;])
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class Bar(GraphObject):
+    &#34;&#34;&#34;Bar object used within `BarGraph`
+
+    This represent a bar within a bar graph.  Its construction used an execution object.
+    Once an execution is done, metrics objects are pulled and summarized into means and standard
+    deviations.
+
+    The keys within the `core.Metrics` are used to compose bars.  You may select just one.
+    But optionally you may compose bars of many metrics (See matplotlibs stacked bar).
+
+    Arguments:
+        wl (Execution, List):  Execution object or list for constant values
+        composed_of (List): A key for the data to use, or optionally a list of keys
+        label (str): Label of the bar
+
+    Example:
+        &gt;&gt;&gt; e1 = plan_execution(...)
+        &gt;&gt;&gt; e2 = plan_execution(...)
+        &gt;&gt;&gt; e3 = plan_execution(...)
+        &gt;&gt;&gt;
+        &gt;&gt;&gt; b1 = Bar(e1, [&#34;data1&#34;, &#34;data2&#34;])
+        &gt;&gt;&gt;
+        &gt;&gt;&gt; # Below Bar: data1 = 10, data2 = 22
+        &gt;&gt;&gt; b1 = Bar([10, 22], [&#34;data1&#34;, &#34;data2&#34;])
+    &#34;&#34;&#34;
+
+    def __init__(self, wl, composed_of, label=None):
+
+        self.composed = composed_of
+        if isinstance(wl, list):
+            d = dict()
+            for i, x in enumerate(self.composed):
+                d[x] = wl[i]
+            wl = ExecutionStub(**d)
+        self.workload = wl
+        self.label = label
+        if isinstance(label, str):
+            self.label = [label]
+        if label is None:
+            self.label = [&#34;&#34;]
+
+    def get_data(self, restrict_on):
+        d = filter(self.workload._cached, restrict_on)[0].get_stats()
+        composed = []
+        for c in self.composed:
+            composed.append(c)
+            composed.append(c + &#34;_std&#34;)
+        label = self.label
+        return pd.DataFrame({c: d[c] for c in composed}, index=self.label).T</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>progbg.graphing._graph.GraphObject</li>
+<li>abc.ABC</li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="progbg.graphing.Bar.get_data"><code class="name flex">
+<span>def <span class="ident">get_data</span></span>(<span>self, restrict_on)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_data(self, restrict_on):
+    d = filter(self.workload._cached, restrict_on)[0].get_stats()
+    composed = []
+    for c in self.composed:
+        composed.append(c)
+        composed.append(c + &#34;_std&#34;)
+    label = self.label
+    return pd.DataFrame({c: d[c] for c in composed}, index=self.label).T</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="progbg.graphing.BarFactory"><code class="flex name class">
+<span>class <span class="ident">BarFactory</span></span>
+<span>(</span><span>wl)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Ease of use Factory Class</p>
+<p>Used to quickly be able to make many bars from one Execution object</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class BarFactory:
+    &#34;&#34;&#34;Ease of use Factory Class
+
+    Used to quickly be able to make many bars from one Execution object
+    &#34;&#34;&#34;
+
+    def __init__(self, wl):
+        self.workload = wl
+
+    def __call__(self, composed_of, label=None):
+        if not label:
+            label = self.workload.name
+        return Bar(self.workload, composed_of, label)</code></pre>
+</details>
+</dd>
+<dt id="progbg.graphing.BarGraph"><code class="flex name class">
+<span>class <span class="ident">BarGraph</span></span>
+<span>(</span><span>workloads: List, **kwargs)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Bar Graph</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>workloads</code></strong> :&ensp;<code>List</code></dt>
+<dd>A list of list of bars.
+Each list is a grouping of bars to be graphs.</dd>
+<dt><strong><code>group_labels</code></strong> :&ensp;<code>List</code></dt>
+<dd>Labels associated to each grouped list in workloads.</dd>
+<dt><strong><code>formatter</code></strong> :&ensp;<code>Function</code>, optional</dt>
+<dd>Function object for post customization of graphs.</dd>
+<dt><strong><code>width</code></strong> :&ensp;<code>float</code></dt>
+<dd>Width of each bar</dd>
+<dt><strong><code>out</code></strong> :&ensp;<code>Path</code></dt>
+<dd>Output file for this single graph to be saved to</dd>
+<dt><strong><code>style</code></strong> :&ensp;<code>str</code></dt>
+<dd>Style of the graph (default: color_a)</dd>
+<dt><strong><code>kwargs</code></strong> :&ensp;<code>optional</code></dt>
+<dd>Passed to matplotlib <code>Axes.plot</code> function or optional named params below.</dd>
+</dl>
+<p>Progbg optional kwargs:
+title (str): Title of the graph or figure</p>
+<h2 id="examples">Examples</h2>
+<p>Suppose we have some previously defined execution called <code>exec</code>.</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; exec = plan_execution(...)
+&gt;&gt;&gt; bar1 = Bar(exec, &quot;stat-one&quot;, label=&quot;Custom Stat&quot;)
+&gt;&gt;&gt; bar2 = Bar(exec, &quot;stat-two&quot;, label=&quot;Custom Stat Two&quot;)
+&gt;&gt;&gt; plan_graph(
+&gt;&gt;&gt;     BarGraph([[bar1, bar2]],
+&gt;&gt;&gt;         group_labels=[&quot;These a grouped!&quot;],
+&gt;&gt;&gt;         out=&quot;custom.svg&quot;
+&gt;&gt;&gt;     )
+</code></pre>
+<p>The above example would create a graph grouping both bar1, and bar2 next to each other. The below example
+would seperate bar1 and bar2. "stat-one", and "stat-two", are both values that would have been added to the
+associated <code>core.Metrics</code> object which is passed through the parser functions provided by the user.</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; plan_graph(
+&gt;&gt;&gt;     BarGraph([[bar1], [bar2]],
+&gt;&gt;&gt;         group_labels=[&quot;Group 1!&quot;, &quot;Group 2!&quot;],
+&gt;&gt;&gt;         out=&quot;custom.svg&quot;
+&gt;&gt;&gt;     )
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class BarGraph(Graph):
+    &#34;&#34;&#34;Bar Graph
+
+    Args:
+        workloads (List): A list of list of bars.  Each list is a grouping of bars to be graphs.
+        group_labels (List): Labels associated to each grouped list in workloads.
+        formatter (Function, optional): Function object for post customization of graphs.
+        width (float): Width of each bar
+        out (Path): Output file for this single graph to be saved to
+        style (str): Style of the graph (default: color_a)
+        kwargs (optional): Passed to matplotlib `Axes.plot` function or optional named params below.
+
+    Progbg optional kwargs:
+        title (str): Title of the graph or figure
+
+    Examples:
+        Suppose we have some previously defined execution called `exec`.
+
+        &gt;&gt;&gt; exec = plan_execution(...)
+        &gt;&gt;&gt; bar1 = Bar(exec, &#34;stat-one&#34;, label=&#34;Custom Stat&#34;)
+        &gt;&gt;&gt; bar2 = Bar(exec, &#34;stat-two&#34;, label=&#34;Custom Stat Two&#34;)
+        &gt;&gt;&gt; plan_graph(
+        &gt;&gt;&gt;     BarGraph([[bar1, bar2]],
+        &gt;&gt;&gt;         group_labels=[&#34;These a grouped!&#34;],
+        &gt;&gt;&gt;         out=&#34;custom.svg&#34;
+        &gt;&gt;&gt;     )
+
+        The above example would create a graph grouping both bar1, and bar2 next to each other. The below example
+        would seperate bar1 and bar2. &#34;stat-one&#34;, and &#34;stat-two&#34;, are both values that would have been added to the
+        associated `core.Metrics` object which is passed through the parser functions provided by the user.
+
+        &gt;&gt;&gt; plan_graph(
+        &gt;&gt;&gt;     BarGraph([[bar1], [bar2]],
+        &gt;&gt;&gt;         group_labels=[&#34;Group 1!&#34;, &#34;Group 2!&#34;],
+        &gt;&gt;&gt;         out=&#34;custom.svg&#34;
+        &gt;&gt;&gt;     )
+    &#34;&#34;&#34;
+
+    def __init__(self, workloads: List, **kwargs):
+        super().__init__(**kwargs)
+
+        default_options = dict(
+            std=True,
+            group_labels=[],
+            log=False,
+            width=0.5,
+        )
+
+        for prop, default in default_options.items():
+            setattr(self, prop, kwargs.get(prop, default))
+
+        self.workloads = workloads
+        self.html_out = &#34;.&#34;.join(self.out.split(&#34;.&#34;)[:-1]) + &#34;.svg&#34;
+
+    def _graph(self, ax, data):
+        if isinstance(self.workloads[0], BarGroup):
+            # Retrieve top level labels
+            data = [pd.concat(x) for x in data]
+            data = pd.concat(data, axis=1)
+            cols = [c for c in data.columns if c[-4:] != &#34;_std&#34;]
+            cols_std = [c for c in data.columns if len(c) &gt; 4 and c[-4:] == &#34;_std&#34;]
+            df = data[cols].T
+            std = data[cols_std]
+            std.columns = [x[:-4] for x in std.columns]
+            std = std.T
+            df.plot.bar(rot=-90, ax=ax, yerr=std, capsize=4, width=self.width)
+            if self.log:
+                ax.set_yscale(&#34;log&#34;)
+        else:
+            data = pd.concat(data, axis=1).T
+            cols = [c for c in data.columns if c[-4:] != &#34;_std&#34;]
+            cols_std = [c for c in data.columns if len(c) &gt; 4 and c[-4:] == &#34;_std&#34;]
+            df = data[cols]
+            std = data[cols_std].T
+            df.plot(rot=-90, kind=&#34;bar&#34;, stacked=True, ax=ax)</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>progbg.graphing._graph.Graph</li>
+<li>abc.ABC</li>
+</ul>
+</dd>
+<dt id="progbg.graphing.BarGroup"><code class="flex name class">
+<span>class <span class="ident">BarGroup</span></span>
+<span>(</span><span>executions, cat, label)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Groups Data as bars on single value</p>
+<h2 id="arguments">Arguments</h2>
+<p>executions (List): List of executions to include in group
+cat (str): category to compare the workloads
+label (List[str]): Labels for the elements in the group</p>
+<h2 id="examples">Examples</h2>
+<pre><code class="language-python-repl">&gt;&gt;&gt; e1 = plan_execution(...)
+&gt;&gt;&gt; e2 = plan_execution(...)
+&gt;&gt;&gt; e3 = plan_execution(...)
+&gt;&gt;&gt;
+&gt;&gt;&gt; b1 = BarGroup([e1, e2, e3], &quot;data1&quot;, [&quot;exec1&quot;, &quot;exec2&quot;, &quot;exec3&quot;])
+&gt;&gt;&gt; b2 = BarGroup([e1, 20, e3], &quot;data1&quot;, [&quot;exec1&quot;, &quot;normal&quot;, &quot;exec3&quot;])
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class BarGroup(GraphObject):
+    &#34;&#34;&#34;Groups Data as bars on single value
+
+    Arguments:
+        executions (List): List of executions to include in group
+        cat (str): category to compare the workloads
+        label (List[str]): Labels for the elements in the group
+
+    Examples:
+        &gt;&gt;&gt; e1 = plan_execution(...)
+        &gt;&gt;&gt; e2 = plan_execution(...)
+        &gt;&gt;&gt; e3 = plan_execution(...)
+        &gt;&gt;&gt;
+        &gt;&gt;&gt; b1 = BarGroup([e1, e2, e3], &#34;data1&#34;, [&#34;exec1&#34;, &#34;exec2&#34;, &#34;exec3&#34;])
+        &gt;&gt;&gt; b2 = BarGroup([e1, 20, e3], &#34;data1&#34;, [&#34;exec1&#34;, &#34;normal&#34;, &#34;exec3&#34;])
+    &#34;&#34;&#34;
+
+    def __init__(self, executions, cat, label):
+        self.wls = executions
+        self.cat = cat
+        self.label = label
+
+    def get_data(self, restrict_on):
+        bars = []
+        for i, w in enumerate(self.wls):
+            bars.append(Bar(w, [self.cat], [self.label[i]]))
+        dfs = [b.get_data(restrict_on).T for b in bars]
+        return dfs
+
+    def bars(self):
+        bars = []
+        half = (len(self.wls) - 1 / 2) - 1
+        for i, w in enumerate(self.wls):
+            if i == half:
+                bars.append(Bar(w, self.cat, self.label[i]))
+            else:
+                bars.append(Bar(w, self.cat, None))
+        return bars</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>progbg.graphing._graph.GraphObject</li>
+<li>abc.ABC</li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="progbg.graphing.BarGroup.bars"><code class="name flex">
+<span>def <span class="ident">bars</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def bars(self):
+    bars = []
+    half = (len(self.wls) - 1 / 2) - 1
+    for i, w in enumerate(self.wls):
+        if i == half:
+            bars.append(Bar(w, self.cat, self.label[i]))
+        else:
+            bars.append(Bar(w, self.cat, None))
+    return bars</code></pre>
+</details>
+</dd>
+<dt id="progbg.graphing.BarGroup.get_data"><code class="name flex">
+<span>def <span class="ident">get_data</span></span>(<span>self, restrict_on)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_data(self, restrict_on):
+    bars = []
+    for i, w in enumerate(self.wls):
+        bars.append(Bar(w, [self.cat], [self.label[i]]))
+    dfs = [b.get_data(restrict_on).T for b in bars]
+    return dfs</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="progbg.graphing.ConstLine"><code class="flex name class">
+<span>class <span class="ident">ConstLine</span></span>
+<span>(</span><span>value, label, index, style=':')</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Const Line Object
+Will plot a horizontal line</p>
+<h2 id="arguments">Arguments</h2>
+<p>value: Value for constant line, either a workload or straight number
+label (str): Label for the line
+index: Label used for the value's index. Used when comparing against other lines</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class ConstLine(GraphObject):
+    &#34;&#34;&#34;Const Line Object
+    Will plot a horizontal line
+
+    Arguments:
+        value: Value for constant line, either a workload or straight number
+        label (str): Label for the line
+        index: Label used for the value&#39;s index. Used when comparing against other lines
+    &#34;&#34;&#34;
+
+    def __init__(self, value, label, index, style=&#34;:&#34;):
+        self.label = label
+        self.value = value
+        self.index = index
+        self.style = style
+
+    def get_data(self, restrict_on):
+        val = self.value._cached[0].get_stats()[self.index]
+        return (self.label, val)</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>progbg.graphing._graph.GraphObject</li>
+<li>abc.ABC</li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="progbg.graphing.ConstLine.get_data"><code class="name flex">
+<span>def <span class="ident">get_data</span></span>(<span>self, restrict_on)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_data(self, restrict_on):
+    val = self.value._cached[0].get_stats()[self.index]
+    return (self.label, val)</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="progbg.graphing.CustomGraph"><code class="flex name class">
+<span>class <span class="ident">CustomGraph</span></span>
+<span>(</span><span>workloads, func, out, formatter=[], style='color_a')</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Helper class that provides a standard way to create an ABC using
+inheritance.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class CustomGraph(Graph):
+    def __init__(self, workloads, func, out, formatter=[], style=&#34;color_a&#34;):
+        self.workloads = workloads
+        self.formatter = formatter
+        self.formatters = formatter
+        self.style = style
+        self.out = out
+        self._opts = dict(
+            std=True,
+        )
+        self.html_out = &#34;.&#34;.join(out.split(&#34;.&#34;)[:-1]) + &#34;.svg&#34;
+        self._restrict_on = {}
+        self.func = func
+
+    def _graph(self, ax, data):
+        self.func(ax, data)</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>progbg.graphing._graph.Graph</li>
+<li>abc.ABC</li>
+</ul>
+</dd>
+<dt id="progbg.graphing.Line"><code class="flex name class">
+<span>class <span class="ident">Line</span></span>
+<span>(</span><span>execution, value: str, x=None, label: str = None, style='--')</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Line Object
+Used to specify a line within a graph.</p>
+<h2 id="arguments">Arguments</h2>
+<p>workload (Execution, list[Execution]): Specifies an Execution or list to produce a series.
+value (str): Data label to capture in the series
+x (str, list): When one execution is specified, represent string label to specify x axis.</p>
+<h2 id="optional">Optional</h2>
+<p>label (str): Label for the line
+style (str): Style for the line</p>
+<h2 id="examples">Examples</h2>
+<pre><code class="language-python-repl">&gt;&gt;&gt; e1 = plan_execution(...)
+&gt;&gt;&gt; e2 = plan_execution(...)
+&gt;&gt;&gt; e3 = plan_execution(...)
+&gt;&gt;&gt;
+&gt;&gt;&gt; l1 = Line(e1, &quot;data1&quot;, x=&quot;x_axis_data&quot;)
+&gt;&gt;&gt; # In below line object, line at point 0 will specify e1[&quot;data1&quot;],
+&gt;&gt;&gt; # 1 will specify e2[&quot;data1&quot;], and 2 will specify e3[&quot;data1&quot;]
+&gt;&gt;&gt; l2 = Line([e1, e2, e3], &quot;data1&quot;, x=[0, 1, 2])
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class Line(GraphObject):
+    &#34;&#34;&#34;Line Object
+    Used to specify a line within a graph.
+
+    Arguments:
+        workload (Execution, list[Execution]): Specifies an Execution or list to produce a series.
+        value (str): Data label to capture in the series
+        x (str, list): When one execution is specified, represent string label to specify x axis.
+
+    Optional:
+        label (str): Label for the line
+        style (str): Style for the line
+
+    Examples:
+        &gt;&gt;&gt; e1 = plan_execution(...)
+        &gt;&gt;&gt; e2 = plan_execution(...)
+        &gt;&gt;&gt; e3 = plan_execution(...)
+        &gt;&gt;&gt;
+        &gt;&gt;&gt; l1 = Line(e1, &#34;data1&#34;, x=&#34;x_axis_data&#34;)
+        &gt;&gt;&gt; # In below line object, line at point 0 will specify e1[&#34;data1&#34;],
+        &gt;&gt;&gt; # 1 will specify e2[&#34;data1&#34;], and 2 will specify e3[&#34;data1&#34;]
+        &gt;&gt;&gt; l2 = Line([e1, e2, e3], &#34;data1&#34;, x=[0, 1, 2])
+    &#34;&#34;&#34;
+
+    def __init__(self, execution, value: str, x=None, label: str = None, style=&#34;--&#34;):
+        if label:
+            self.label = label
+        else:
+            self.label = value
+        self.value = value
+        self.workload = execution
+        self.x = x
+        self.style = style
+        assert x is not None, &#34;x must be specified&#34;
+
+        if isinstance(x, str):
+            assert not isinstance(
+                x, list
+            ), &#34;When x is data ID, only one execution can be specified&#34;
+
+        if isinstance(x, list):
+            assert len(x) == len(
+                workload
+            ), &#34;When x is a list, workload list length must equal x list length&#34;
+
+    def get_data(self, restrict_on, iter=None):
+        d = {self.label: [], self.label + &#34;_std&#34;: []}
+        if isinstance(self.workload, list):
+            for x in self.workload:
+                d[self.label].append(x._cached[0].get_stats()[self.value])
+                d[self.label + &#34;_std&#34;].append(
+                    x._cached[0].get_stats()[self.value + &#34;_std&#34;]
+                )
+
+            return pd.DataFrame(d, index=self.x)
+        else:
+            metrics = filter(self.workload._cached, restrict_on)
+            dicts = [d.get_stats() for d in metrics]
+            df = pd.DataFrame(dicts)
+            df = df.groupby([self.x])
+
+            return pd.DataFrame(df.mean()[[self.value, self.value + &#34;_std&#34;]])</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>progbg.graphing._graph.GraphObject</li>
+<li>abc.ABC</li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="progbg.graphing.Line.get_data"><code class="name flex">
+<span>def <span class="ident">get_data</span></span>(<span>self, restrict_on, iter=None)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_data(self, restrict_on, iter=None):
+    d = {self.label: [], self.label + &#34;_std&#34;: []}
+    if isinstance(self.workload, list):
+        for x in self.workload:
+            d[self.label].append(x._cached[0].get_stats()[self.value])
+            d[self.label + &#34;_std&#34;].append(
+                x._cached[0].get_stats()[self.value + &#34;_std&#34;]
+            )
+
+        return pd.DataFrame(d, index=self.x)
+    else:
+        metrics = filter(self.workload._cached, restrict_on)
+        dicts = [d.get_stats() for d in metrics]
+        df = pd.DataFrame(dicts)
+        df = df.groupby([self.x])
+
+        return pd.DataFrame(df.mean()[[self.value, self.value + &#34;_std&#34;]])</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="progbg.graphing.LineGraph"><code class="flex name class">
+<span>class <span class="ident">LineGraph</span></span>
+<span>(</span><span>lines, **kwargs)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>progbg Line Graph</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>lines</code></strong> :&ensp;<code>List[<a title="progbg.graphing.Line" href="#progbg.graphing.Line">Line</a>]</code></dt>
+<dd>Workloads that the line graph will use in the WRK:BCK1/BCK2 format</dd>
+<dt>type (str) (Function, optional): Type of line graph (default, cdf)</dt>
+<dt><strong><code>style</code></strong> :&ensp;<code>str, cycler</code></dt>
+<dd>Style string for progbg styles or a cycler object to dictate custom style of lines</dd>
+<dt><strong><code>formatter</code></strong> :&ensp;<code>Function</code>, optional</dt>
+<dd>Formatter to be used on the graph once the graph is complete</dd>
+<dt><strong><code>out</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>Optional name for file the user wishes to save the graph too.</dd>
+<dt><strong><code>kwargs</code></strong> :&ensp;<code>optional</code></dt>
+<dd>Passed to matplotlib <code>Axes.plot</code> function or optional named params below.</dd>
+</dl>
+<p>Types of Line Graphs:
+default: This is just the standard line graph
+cdf: Creates a CDF line graph</p>
+<h2 id="examples">Examples</h2>
+<p>Suppose we have some previously defined backend <code>composed_backend</code> and workloads <code>Wrk</code>:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; exec = sb.plan_execution(
+&gt;&gt;&gt;     Wrk({}, [(&quot;x&quot;, range(0, 5))], iterations = 5),
+&gt;&gt;&gt;     out = &quot;out&quot;,
+&gt;&gt;&gt;     backends = [composed_backend({},
+&gt;&gt;&gt;         [(&quot;pass_me_in&quot;, range(0, 10, 2))])],
+&gt;&gt;&gt;     parser = file_func,
+&gt;&gt;&gt; )
+</code></pre>
+<p>Note: We are executing the benchmark over a ranging value called "x". Say we want to see how
+our stat changes over this value using a line graph. The following would be done:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; line1 = Line(exec, &quot;stat-one&quot;, x=&quot;x&quot;, label=&quot;Custom Stat&quot;)
+&gt;&gt;&gt; line2 = Line(exec, &quot;stat-two&quot;, x=&quot;x&quot;, label=&quot;Custom Stat Two&quot;)
+&gt;&gt;&gt; plan_graph(
+&gt;&gt;&gt;     LineGraph([line1, line2],
+&gt;&gt;&gt;         restrict_on = {
+&gt;&gt;&gt;             &quot;pass_me_in&quot;, 0,
+&gt;&gt;&gt;         },
+&gt;&gt;&gt;         out=&quot;custom.svg&quot;
+&gt;&gt;&gt;     )
+</code></pre>
+<p>We restrict on <code>pass_me_in = 0</code> as in the above execution we are executing over this as well so
+we need to isolate on one changing value for the line graph.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class LineGraph(Graph):
+    &#34;&#34;&#34;progbg Line Graph
+
+    Args:
+        lines (List[Line]): Workloads that the line graph will use in the WRK:BCK1/BCK2 format
+        type (str) (Function, optional): Type of line graph (default, cdf)
+        style (str, cycler): Style string for progbg styles or a cycler object to dictate custom style of lines
+        formatter (Function, optional): Formatter to be used on the graph once the graph is complete
+        out (str, optional): Optional name for file the user wishes to save the graph too.
+        kwargs (optional): Passed to matplotlib `Axes.plot` function or optional named params below.
+
+    Types of Line Graphs:
+        default: This is just the standard line graph
+        cdf: Creates a CDF line graph
+
+    Examples:
+        Suppose we have some previously defined backend `composed_backend` and workloads `Wrk`:
+
+        &gt;&gt;&gt; exec = sb.plan_execution(
+        &gt;&gt;&gt;     Wrk({}, [(&#34;x&#34;, range(0, 5))], iterations = 5),
+        &gt;&gt;&gt;     out = &#34;out&#34;,
+        &gt;&gt;&gt;     backends = [composed_backend({},
+        &gt;&gt;&gt;         [(&#34;pass_me_in&#34;, range(0, 10, 2))])],
+        &gt;&gt;&gt;     parser = file_func,
+        &gt;&gt;&gt; )
+
+        Note: We are executing the benchmark over a ranging value called &#34;x&#34;. Say we want to see how
+        our stat changes over this value using a line graph. The following would be done:
+
+        &gt;&gt;&gt; line1 = Line(exec, &#34;stat-one&#34;, x=&#34;x&#34;, label=&#34;Custom Stat&#34;)
+        &gt;&gt;&gt; line2 = Line(exec, &#34;stat-two&#34;, x=&#34;x&#34;, label=&#34;Custom Stat Two&#34;)
+        &gt;&gt;&gt; plan_graph(
+        &gt;&gt;&gt;     LineGraph([line1, line2],
+        &gt;&gt;&gt;         restrict_on = {
+        &gt;&gt;&gt;             &#34;pass_me_in&#34;, 0,
+        &gt;&gt;&gt;         },
+        &gt;&gt;&gt;         out=&#34;custom.svg&#34;
+        &gt;&gt;&gt;     )
+
+        We restrict on `pass_me_in = 0` as in the above execution we are executing over this as well so
+        we need to isolate on one changing value for the line graph.
+    &#34;&#34;&#34;
+
+    def __init__(self, lines, **kwargs):
+        super().__init__(**kwargs)
+
+        default_options = dict(
+            std=False,
+            group_labels=[],
+            type=&#34;default&#34;,
+            log=False,
+            width=0.5,
+        )
+
+        for prop, default in default_options.items():
+            setattr(self, prop, kwargs.get(prop, default))
+
+        self.consts = []
+        self.workloads = []
+        for c in lines:
+            if isinstance(c, ConstLine):
+                self.consts.append(c)
+            else:
+                self.workloads.append(c)
+
+        self.html_out = &#34;.&#34;.join(self.out.split(&#34;.&#34;)[:-1]) + &#34;.svg&#34;
+
+    def _graph(self, ax, data):
+        # Hack for dealing with const lines.
+        consts = [x.get_data(self._restrict_on) for x in self.consts]
+        vals = [x for x in data[0].T.columns]
+        styles = [x.style for x in self.workloads]
+        styles_consts = [x.style for x in self.consts]
+
+        # Combine data
+        data = pd.concat(data, axis=1)
+        consts = [pd.DataFrame({c[0]: [c[1]] * len(vals)}, index=vals) for c in consts]
+        if len(consts):
+            consts = pd.concat(consts, axis=1)
+
+        # Pull out the standard deviation and such
+        cols = [c for c in data.columns if c[-4:] != &#34;_std&#34;]
+        cols_std = [c for c in data.columns if len(c) &gt; 4 and c[-4:] == &#34;_std&#34;]
+        d = data[cols]
+        std = data[cols_std]
+        std.columns = [x[:-4] for x in std.columns]
+        y = [x for x in d.T.columns]
+
+        # It seems like styles is not respected setting them so we will manually do them
+        style = iter(get_style_cycler())
+        for i, x in enumerate(d.columns):
+            tmp = next(style)
+            if self.std:
+                ax.errorbar(y, d[x].tolist(), yerr=std[x], **tmp)
+            else:
+                ax.plot(y, d[x].tolist(), styles[i], **tmp)
+        if len(consts):
+            for i, x in enumerate(consts.columns):
+                tmp = next(style)
+                ax.plot(y, consts[x].tolist(), **tmp)</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>progbg.graphing._graph.Graph</li>
+<li>abc.ABC</li>
+</ul>
+</dd>
+</dl>
 </section>
 </article>
 <nav id="sidebar">
@@ -52,6 +819,47 @@ from ._linegraph import Line, LineGraph, ConstLine</code></pre>
 <li><h3>Super-module</h3>
 <ul>
 <li><code><a title="progbg" href="../index.html">progbg</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="progbg.graphing.Bar" href="#progbg.graphing.Bar">Bar</a></code></h4>
+<ul class="">
+<li><code><a title="progbg.graphing.Bar.get_data" href="#progbg.graphing.Bar.get_data">get_data</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="progbg.graphing.BarFactory" href="#progbg.graphing.BarFactory">BarFactory</a></code></h4>
+</li>
+<li>
+<h4><code><a title="progbg.graphing.BarGraph" href="#progbg.graphing.BarGraph">BarGraph</a></code></h4>
+</li>
+<li>
+<h4><code><a title="progbg.graphing.BarGroup" href="#progbg.graphing.BarGroup">BarGroup</a></code></h4>
+<ul class="">
+<li><code><a title="progbg.graphing.BarGroup.bars" href="#progbg.graphing.BarGroup.bars">bars</a></code></li>
+<li><code><a title="progbg.graphing.BarGroup.get_data" href="#progbg.graphing.BarGroup.get_data">get_data</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="progbg.graphing.ConstLine" href="#progbg.graphing.ConstLine">ConstLine</a></code></h4>
+<ul class="">
+<li><code><a title="progbg.graphing.ConstLine.get_data" href="#progbg.graphing.ConstLine.get_data">get_data</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="progbg.graphing.CustomGraph" href="#progbg.graphing.CustomGraph">CustomGraph</a></code></h4>
+</li>
+<li>
+<h4><code><a title="progbg.graphing.Line" href="#progbg.graphing.Line">Line</a></code></h4>
+<ul class="">
+<li><code><a title="progbg.graphing.Line.get_data" href="#progbg.graphing.Line.get_data">get_data</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="progbg.graphing.LineGraph" href="#progbg.graphing.LineGraph">LineGraph</a></code></h4>
+</li>
 </ul>
 </li>
 </ul>
