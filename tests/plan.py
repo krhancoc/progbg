@@ -90,7 +90,7 @@ bf = graph.BarFactory(exec)
 graph1 = sb.plan_graph(
     graph.BarGraph(
         [
-            bf("low"), bf(["low", "mid", "high"])
+            bf(["low"]), bf(["low", "mid", "high"])
         ],
         restrict_on={
             "pass_me_in": 0,

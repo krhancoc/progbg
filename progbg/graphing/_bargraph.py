@@ -28,33 +28,30 @@ class Bar(GraphObject):
     The keys within the `core.Metrics` are used to compose bars.  You may select just one.
     But optionally you may compose bars of many metrics (See matplotlibs stacked bar).
 
-    Args:
-        wl (Execution):  Execution object to use
-        composed_of (List, str): A key for the data to use, or optionally a list of keys
+    Arguments:
+        wl (Execution, List):  Execution object or list for constant values
+        composed_of (List): A key for the data to use, or optionally a list of keys
         label (str): Label of the bar
+
+    Example:
+        >>> e1 = plan_execution(...)
+        >>> e2 = plan_execution(...)
+        >>> e3 = plan_execution(...)
+        >>>
+        >>> b1 = Bar(e1, ["data1", "data2"])
+        >>>
+        >>> # Below Bar: data1 = 10, data2 = 22
+        >>> b1 = Bar([10, 22], ["data1", "data2"])
     """
 
-    def __init__(self, wl, composed_of, label):
+    def __init__(self, wl, composed_of, label=None):
 
-        if isinstance(
-            composed_of,
-            str,
-        ):
-
-            self.composed = [composed_of]
-            if isinstance(wl, (int, float)):
-                d = {self.composed[0]: wl}
-                wl = ExecutionStub(**d)
-            if isinstance(wl, tuple):
-                d = {self.composed[0]: wl[0], self.composed[0] + "_std": wl[1]}
-                wl = ExecutionStub(**d)
-        else:
-            self.composed = composed_of
-            if isinstance(wl, list):
-                d = dict()
-                for i, x in enumerate(self.composed):
-                    d[x] = wl[i]
-                wl = ExecutionStub(**d)
+        self.composed = composed_of
+        if isinstance(wl, list):
+            d = dict()
+            for i, x in enumerate(self.composed):
+                d[x] = wl[i]
+            wl = ExecutionStub(**d)
         self.workload = wl
         self.label = label
         if isinstance(label, str):
@@ -73,15 +70,31 @@ class Bar(GraphObject):
 
 
 class BarGroup(GraphObject):
-    def __init__(self, wls, cat, label):
-        self.wls = wls
+    """Groups Data as bars on single value
+
+    Arguments:
+        executions (List): List of executions to include in group
+        cat (str): category to compare the workloads
+        label (List[str]): Labels for the elements in the group
+
+    Examples:
+        >>> e1 = plan_execution(...)
+        >>> e2 = plan_execution(...)
+        >>> e3 = plan_execution(...)
+        >>>
+        >>> b1 = BarGroup([e1, e2, e3], "data1", ["exec1", "exec2", "exec3"])
+        >>> b2 = BarGroup([e1, 20, e3], "data1", ["exec1", "normal", "exec3"])
+    """
+
+    def __init__(self, executions, cat, label):
+        self.wls = executions
         self.cat = cat
         self.label = label
 
     def get_data(self, restrict_on):
         bars = []
         for i, w in enumerate(self.wls):
-            bars.append(Bar(w, self.cat, [self.label[i]]))
+            bars.append(Bar(w, [self.cat], [self.label[i]]))
         dfs = [b.get_data(restrict_on).T for b in bars]
         return dfs
 

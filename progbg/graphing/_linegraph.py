@@ -19,6 +19,15 @@ from ..style import get_style, set_style, get_style_cycler
 
 
 class ConstLine(GraphObject):
+    """Const Line Object
+    Will plot a horizontal line
+
+    Arguments:
+        value: Value for constant line, either a workload or straight number
+        label (str): Label for the line
+        index: Label used for the value's index. Used when comparing against other lines
+    """
+
     def __init__(self, value, label, index, style=":"):
         self.label = label
         self.value = value
@@ -31,15 +40,49 @@ class ConstLine(GraphObject):
 
 
 class Line(GraphObject):
-    def __init__(self, workload, value: str, x=None, label: str = None, style="--"):
+    """Line Object
+    Used to specify a line within a graph.
+
+    Arguments:
+        workload (Execution, list[Execution]): Specifies an Execution or list to produce a series.
+        value (str): Data label to capture in the series
+        x (str, list): When one execution is specified, represent string label to specify x axis.
+
+    Optional:
+        label (str): Label for the line
+        style (str): Style for the line
+
+    Examples:
+        >>> e1 = plan_execution(...)
+        >>> e2 = plan_execution(...)
+        >>> e3 = plan_execution(...)
+        >>>
+        >>> l1 = Line(e1, "data1", x="x_axis_data")
+        >>> # In below line object, line at point 0 will specify e1["data1"],
+        >>> # 1 will specify e2["data1"], and 2 will specify e3["data1"]
+        >>> l2 = Line([e1, e2, e3], "data1", x=[0, 1, 2])
+    """
+
+    def __init__(self, execution, value: str, x=None, label: str = None, style="--"):
         if label:
             self.label = label
         else:
             self.label = value
         self.value = value
-        self.workload = workload
+        self.workload = execution
         self.x = x
         self.style = style
+        assert x is not None, "x must be specified"
+
+        if isinstance(x, str):
+            assert not isinstance(
+                x, list
+            ), "When x is data ID, only one execution can be specified"
+
+        if isinstance(x, list):
+            assert len(x) == len(
+                workload
+            ), "When x is a list, workload list length must equal x list length"
 
     def get_data(self, restrict_on, iter=None):
         d = {self.label: [], self.label + "_std": []}
@@ -71,9 +114,6 @@ class LineGraph(Graph):
         out (str, optional): Optional name for file the user wishes to save the graph too.
         kwargs (optional): Passed to matplotlib `Axes.plot` function or optional named params below.
 
-    Progbg optional kwargs:
-        title (str): Title of the graph or figure
-
     Types of Line Graphs:
         default: This is just the standard line graph
         cdf: Creates a CDF line graph
@@ -92,16 +132,14 @@ class LineGraph(Graph):
         Note: We are executing the benchmark over a ranging value called "x". Say we want to see how
         our stat changes over this value using a line graph. The following would be done:
 
-        >>> line1 = Line(exec, "stat-one", label="Custom Stat")
-        >>> line2 = Line(exec, "stat-two", label="Custom Stat Two")
+        >>> line1 = Line(exec, "stat-one", x="x", label="Custom Stat")
+        >>> line2 = Line(exec, "stat-two", x="x", label="Custom Stat Two")
         >>> plan_graph(
         >>>     LineGraph([line1, line2],
-        >>>         "x",
         >>>         restrict_on = {
         >>>             "pass_me_in", 0,
         >>>         },
         >>>         out="custom.svg"
-        >>>         title="My Line Graph"
         >>>     )
 
         We restrict on `pass_me_in = 0` as in the above execution we are executing over this as well so
@@ -114,6 +152,7 @@ class LineGraph(Graph):
         default_options = dict(
             std=False,
             group_labels=[],
+            type="default",
             log=False,
             width=0.5,
         )

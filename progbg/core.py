@@ -859,9 +859,9 @@ def plan_figure(out, graph_layout: List[List[str]]):
         for example:
 
         >>> plan_figure(
-        >>>     "figure.pgf", 
+        >>>     "figure.pgf",
         >>>     [
-        >>>         [graph1,     graph1,       graph1], 
+        >>>         [graph1,     graph1,       graph1],
         >>>         [cdf_graph,  custom_graph, custom_graph],
         >>>         [cdf_graph,  custom_graph, custom_graph]
         >>>     ]
