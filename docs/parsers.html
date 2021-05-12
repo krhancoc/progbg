@@ -62,24 +62,26 @@ class MatchParser:
             if re.search(cand, line):
                 output = tup[1](line)
                 if len(output) != len(tup[0]):
-                    raise Exception(&#34;Function provided outputed {} values, expected {}&#34;
-                                    .format(len(output), len(tup[0])))
+                    raise Exception(
+                        &#34;Function provided outputed {} values, expected {}&#34;.format(
+                            len(output), len(tup[0])
+                        )
+                    )
                 for match in zip(tup[0], output):
                     obj[match[0]] = match[1]
 
     def param_exists(self, name: str) -&gt; bool:
         &#34;&#34;&#34;Check if a param exists as an output of the parser&#34;&#34;&#34;
-        return any([name in varfunc[0]
-                    for varfunc in self.match_rules.values()])
+        return any([name in varfunc[0] for varfunc in self.match_rules.values()])
 
     def fields(self) -&gt; List[str]:
-        &#34;&#34;&#34; Retrieve all named fields within the parser&#34;&#34;&#34;
+        &#34;&#34;&#34;Retrieve all named fields within the parser&#34;&#34;&#34;
         return [item for sublist in self.match_rules.values() for item in sublist[0]]
 
     def parse(self, path, bench_args, backend_args) -&gt; List:
         &#34;&#34;&#34;Parse the execution&#34;&#34;&#34;
         obj = {}
-        with open(path, &#39;r&#39;) as file:
+        with open(path, &#34;r&#34;) as file:
             for line in file:
                 self._match(line, obj)
             # Make sure to put constants in the data as well
@@ -92,19 +94,19 @@ class MatchParser:
 
             # We hold field names within our filename as well, things like iteration number
             # and var variable value
-            obj[&#39;_execution_name&#39;] = path.split(&#39;/&#39;)[-1].split(&#39;_&#39;)[0]
-            execution = _sb_executions[obj[&#39;_execution_name&#39;]]
+            obj[&#34;_execution_name&#34;] = path.split(&#34;/&#34;)[-1].split(&#34;_&#34;)[0]
+            execution = _sb_executions[obj[&#34;_execution_name&#34;]]
             obj.update(execution.reverse_file_out(path))
 
         return obj
 
 
 class FileParser:
-    &#34;&#34;&#34; FileParser class parses an entire file pointed to by the path variable using a user
+    &#34;&#34;&#34;FileParser class parses an entire file pointed to by the path variable using a user
     defined function
 
     Arguments:
-    names: Name bindings for the expected output from func.    
+    names: Name bindings for the expected output from func.
     func: A function of the form `def func(path): ...` where path is the name
     of the file to be parsed.   Func should return a list that is the same
     length as names.
@@ -119,7 +121,7 @@ class FileParser:
         return name in self.names
 
     def fields(self) -&gt; List[str]:
-        &#34;&#34;&#34; Retrieve all named fields within the parser&#34;&#34;&#34;
+        &#34;&#34;&#34;Retrieve all named fields within the parser&#34;&#34;&#34;
         return self.names
 
     def parse(self, path, bench_args, backend_args) -&gt; List:
@@ -129,8 +131,11 @@ class FileParser:
             return None
 
         if len(vals) != len(self.names):
-            raise Exception(&#34;Issue with provided function, returned {} vals, expected {}&#34;.format(
-                str(len(vals)), str(len(self.names))))
+            raise Exception(
+                &#34;Issue with provided function, returned {} vals, expected {}&#34;.format(
+                    str(len(vals)), str(len(self.names))
+                )
+            )
 
         obj = {}
         for val in zip(self.names, vals):
@@ -140,8 +145,8 @@ class FileParser:
             for key, val in backend_args.items():
                 obj[key] = val
 
-        obj[&#39;_execution_name&#39;] = path.split(&#39;/&#39;)[-1].split(&#39;_&#39;)[0]
-        execution = _sb_executions[obj[&#39;_execution_name&#39;]]
+        obj[&#34;_execution_name&#34;] = path.split(&#34;/&#34;)[-1].split(&#34;_&#34;)[0]
+        execution = _sb_executions[obj[&#34;_execution_name&#34;]]
         obj.update(execution.reverse_file_out(path))
 
         return obj</code></pre>
@@ -165,7 +170,6 @@ class FileParser:
 defined function</p>
 <p>Arguments:
 names: Name bindings for the expected output from func.
-<br>
 func: A function of the form <code>def func(path): ...</code> where path is the name
 of the file to be parsed.
 Func should return a list that is the same
@@ -175,11 +179,11 @@ length as names.</p></div>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class FileParser:
-    &#34;&#34;&#34; FileParser class parses an entire file pointed to by the path variable using a user
+    &#34;&#34;&#34;FileParser class parses an entire file pointed to by the path variable using a user
     defined function
 
     Arguments:
-    names: Name bindings for the expected output from func.    
+    names: Name bindings for the expected output from func.
     func: A function of the form `def func(path): ...` where path is the name
     of the file to be parsed.   Func should return a list that is the same
     length as names.
@@ -194,7 +198,7 @@ length as names.</p></div>
         return name in self.names
 
     def fields(self) -&gt; List[str]:
-        &#34;&#34;&#34; Retrieve all named fields within the parser&#34;&#34;&#34;
+        &#34;&#34;&#34;Retrieve all named fields within the parser&#34;&#34;&#34;
         return self.names
 
     def parse(self, path, bench_args, backend_args) -&gt; List:
@@ -204,8 +208,11 @@ length as names.</p></div>
             return None
 
         if len(vals) != len(self.names):
-            raise Exception(&#34;Issue with provided function, returned {} vals, expected {}&#34;.format(
-                str(len(vals)), str(len(self.names))))
+            raise Exception(
+                &#34;Issue with provided function, returned {} vals, expected {}&#34;.format(
+                    str(len(vals)), str(len(self.names))
+                )
+            )
 
         obj = {}
         for val in zip(self.names, vals):
@@ -215,8 +222,8 @@ length as names.</p></div>
             for key, val in backend_args.items():
                 obj[key] = val
 
-        obj[&#39;_execution_name&#39;] = path.split(&#39;/&#39;)[-1].split(&#39;_&#39;)[0]
-        execution = _sb_executions[obj[&#39;_execution_name&#39;]]
+        obj[&#34;_execution_name&#34;] = path.split(&#34;/&#34;)[-1].split(&#34;_&#34;)[0]
+        execution = _sb_executions[obj[&#34;_execution_name&#34;]]
         obj.update(execution.reverse_file_out(path))
 
         return obj</code></pre>
@@ -233,7 +240,7 @@ length as names.</p></div>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def fields(self) -&gt; List[str]:
-    &#34;&#34;&#34; Retrieve all named fields within the parser&#34;&#34;&#34;
+    &#34;&#34;&#34;Retrieve all named fields within the parser&#34;&#34;&#34;
     return self.names</code></pre>
 </details>
 </dd>
@@ -267,8 +274,11 @@ length as names.</p></div>
         return None
 
     if len(vals) != len(self.names):
-        raise Exception(&#34;Issue with provided function, returned {} vals, expected {}&#34;.format(
-            str(len(vals)), str(len(self.names))))
+        raise Exception(
+            &#34;Issue with provided function, returned {} vals, expected {}&#34;.format(
+                str(len(vals)), str(len(self.names))
+            )
+        )
 
     obj = {}
     for val in zip(self.names, vals):
@@ -278,8 +288,8 @@ length as names.</p></div>
         for key, val in backend_args.items():
             obj[key] = val
 
-    obj[&#39;_execution_name&#39;] = path.split(&#39;/&#39;)[-1].split(&#39;_&#39;)[0]
-    execution = _sb_executions[obj[&#39;_execution_name&#39;]]
+    obj[&#34;_execution_name&#34;] = path.split(&#34;/&#34;)[-1].split(&#34;_&#34;)[0]
+    execution = _sb_executions[obj[&#34;_execution_name&#34;]]
     obj.update(execution.reverse_file_out(path))
 
     return obj</code></pre>
@@ -343,24 +353,26 @@ This means func must output a list of 3 values for this above example.</p></div>
             if re.search(cand, line):
                 output = tup[1](line)
                 if len(output) != len(tup[0]):
-                    raise Exception(&#34;Function provided outputed {} values, expected {}&#34;
-                                    .format(len(output), len(tup[0])))
+                    raise Exception(
+                        &#34;Function provided outputed {} values, expected {}&#34;.format(
+                            len(output), len(tup[0])
+                        )
+                    )
                 for match in zip(tup[0], output):
                     obj[match[0]] = match[1]
 
     def param_exists(self, name: str) -&gt; bool:
         &#34;&#34;&#34;Check if a param exists as an output of the parser&#34;&#34;&#34;
-        return any([name in varfunc[0]
-                    for varfunc in self.match_rules.values()])
+        return any([name in varfunc[0] for varfunc in self.match_rules.values()])
 
     def fields(self) -&gt; List[str]:
-        &#34;&#34;&#34; Retrieve all named fields within the parser&#34;&#34;&#34;
+        &#34;&#34;&#34;Retrieve all named fields within the parser&#34;&#34;&#34;
         return [item for sublist in self.match_rules.values() for item in sublist[0]]
 
     def parse(self, path, bench_args, backend_args) -&gt; List:
         &#34;&#34;&#34;Parse the execution&#34;&#34;&#34;
         obj = {}
-        with open(path, &#39;r&#39;) as file:
+        with open(path, &#34;r&#34;) as file:
             for line in file:
                 self._match(line, obj)
             # Make sure to put constants in the data as well
@@ -373,8 +385,8 @@ This means func must output a list of 3 values for this above example.</p></div>
 
             # We hold field names within our filename as well, things like iteration number
             # and var variable value
-            obj[&#39;_execution_name&#39;] = path.split(&#39;/&#39;)[-1].split(&#39;_&#39;)[0]
-            execution = _sb_executions[obj[&#39;_execution_name&#39;]]
+            obj[&#34;_execution_name&#34;] = path.split(&#34;/&#34;)[-1].split(&#34;_&#34;)[0]
+            execution = _sb_executions[obj[&#34;_execution_name&#34;]]
             obj.update(execution.reverse_file_out(path))
 
         return obj</code></pre>
@@ -391,7 +403,7 @@ This means func must output a list of 3 values for this above example.</p></div>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def fields(self) -&gt; List[str]:
-    &#34;&#34;&#34; Retrieve all named fields within the parser&#34;&#34;&#34;
+    &#34;&#34;&#34;Retrieve all named fields within the parser&#34;&#34;&#34;
     return [item for sublist in self.match_rules.values() for item in sublist[0]]</code></pre>
 </details>
 </dd>
@@ -406,8 +418,7 @@ This means func must output a list of 3 values for this above example.</p></div>
 </summary>
 <pre><code class="python">def param_exists(self, name: str) -&gt; bool:
     &#34;&#34;&#34;Check if a param exists as an output of the parser&#34;&#34;&#34;
-    return any([name in varfunc[0]
-                for varfunc in self.match_rules.values()])</code></pre>
+    return any([name in varfunc[0] for varfunc in self.match_rules.values()])</code></pre>
 </details>
 </dd>
 <dt id="progbg.parsers.MatchParser.parse"><code class="name flex">
@@ -422,7 +433,7 @@ This means func must output a list of 3 values for this above example.</p></div>
 <pre><code class="python">def parse(self, path, bench_args, backend_args) -&gt; List:
     &#34;&#34;&#34;Parse the execution&#34;&#34;&#34;
     obj = {}
-    with open(path, &#39;r&#39;) as file:
+    with open(path, &#34;r&#34;) as file:
         for line in file:
             self._match(line, obj)
         # Make sure to put constants in the data as well
@@ -435,8 +446,8 @@ This means func must output a list of 3 values for this above example.</p></div>
 
         # We hold field names within our filename as well, things like iteration number
         # and var variable value
-        obj[&#39;_execution_name&#39;] = path.split(&#39;/&#39;)[-1].split(&#39;_&#39;)[0]
-        execution = _sb_executions[obj[&#39;_execution_name&#39;]]
+        obj[&#34;_execution_name&#34;] = path.split(&#34;/&#34;)[-1].split(&#34;_&#34;)[0]
+        execution = _sb_executions[obj[&#34;_execution_name&#34;]]
         obj.update(execution.reverse_file_out(path))
 
     return obj</code></pre>

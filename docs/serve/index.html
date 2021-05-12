@@ -30,37 +30,42 @@
 
 from typing import Dict
 from flask import Flask, render_template, send_from_directory, abort
-from progbg import BarGraph, LineGraph
+from progbg import Execution
+from progbg.graphing import *
 from pprint import pformat
 
 
-def create_server(
-        executions: Dict,
-        graphs: Dict,
-        figures: Dict,
-        graphs_dir: str):
+def create_server(executions, graphs, figures, graphs_dir: str):
     app = Flask(__name__, instance_relative_config=True)
     try:
         os.makedirs(app.instance_path)
     except OSError:
         pass
 
-    @app.route(&#39;/&#39;)
-    def home():
-        return render_template(&#39;index.html&#39;, graphs=graphs, figures=figures)
+    @app.route(&#34;/create_graph&#34;)
+    def create_graph():
+        for e in executions:
+            if isinstance(e, Execution):
+                print(e.varying())
+        return render_template(&#34;create_graph.html&#34;, graphs=graphs, figures=figures)
 
-    @app.route(&#39;/data/&lt;graph_index&gt;&#39;)
+    @app.route(&#34;/&#34;)
+    def home():
+        return render_template(&#34;index.html&#34;, graphs=graphs, figures=figures)
+
+    @app.route(&#34;/data/&lt;graph_index&gt;&#34;)
     def data(graph_index=None):
         graph = graphs[int(graph_index)]
+        print(graph)
         if isinstance(graph, BarGraph):
             # Its a bar graph
-            return render_template(&#39;bar_data.html&#39;, name=graph_index, graph=graph)
+            return render_template(&#34;bar_data.html&#34;, name=graph_index, graph=graph)
         elif isinstance(graph, LineGraph):
-            return render_template(&#39;line_data.html&#39;, name=graph_index, graph=graph)
+            return render_template(&#34;line_data.html&#34;, name=graph_index, graph=graph)
 
         abort(404, description=&#34;Not implemented Graph&#34;)
 
-    @app.route(&#39;/graphs/&lt;path:filename&gt;&#39;)
+    @app.route(&#34;/graphs/&lt;path:filename&gt;&#34;)
     def graphs_static(filename):
         return send_from_directory(graphs_dir, filename)
 
@@ -75,7 +80,7 @@ def create_server(
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
 <dt id="progbg.serve.create_server"><code class="name flex">
-<span>def <span class="ident">create_server</span></span>(<span>executions: Dict, graphs: Dict, figures: Dict, graphs_dir: str)</span>
+<span>def <span class="ident">create_server</span></span>(<span>executions, graphs, figures, graphs_dir: str)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -83,33 +88,37 @@ def create_server(
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def create_server(
-        executions: Dict,
-        graphs: Dict,
-        figures: Dict,
-        graphs_dir: str):
+<pre><code class="python">def create_server(executions, graphs, figures, graphs_dir: str):
     app = Flask(__name__, instance_relative_config=True)
     try:
         os.makedirs(app.instance_path)
     except OSError:
         pass
 
-    @app.route(&#39;/&#39;)
-    def home():
-        return render_template(&#39;index.html&#39;, graphs=graphs, figures=figures)
+    @app.route(&#34;/create_graph&#34;)
+    def create_graph():
+        for e in executions:
+            if isinstance(e, Execution):
+                print(e.varying())
+        return render_template(&#34;create_graph.html&#34;, graphs=graphs, figures=figures)
 
-    @app.route(&#39;/data/&lt;graph_index&gt;&#39;)
+    @app.route(&#34;/&#34;)
+    def home():
+        return render_template(&#34;index.html&#34;, graphs=graphs, figures=figures)
+
+    @app.route(&#34;/data/&lt;graph_index&gt;&#34;)
     def data(graph_index=None):
         graph = graphs[int(graph_index)]
+        print(graph)
         if isinstance(graph, BarGraph):
             # Its a bar graph
-            return render_template(&#39;bar_data.html&#39;, name=graph_index, graph=graph)
+            return render_template(&#34;bar_data.html&#34;, name=graph_index, graph=graph)
         elif isinstance(graph, LineGraph):
-            return render_template(&#39;line_data.html&#39;, name=graph_index, graph=graph)
+            return render_template(&#34;line_data.html&#34;, name=graph_index, graph=graph)
 
         abort(404, description=&#34;Not implemented Graph&#34;)
 
-    @app.route(&#39;/graphs/&lt;path:filename&gt;&#39;)
+    @app.route(&#34;/graphs/&lt;path:filename&gt;&#34;)
     def graphs_static(filename):
         return send_from_directory(graphs_dir, filename)
 

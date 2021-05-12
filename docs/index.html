@@ -49,12 +49,11 @@ from .core import plan_execution, plan_graph, plan_figure, plan_parse
 from .core import registerbackend, registerbenchmark, registerbackend_sh
 from .core import registerbenchmark_sh
 from .core import compose_backends
+from .core import Execution, ParseExecution
 
 from .globals import _sb_executions, _sb_registered_benchmarks
 from .globals import _sb_registered_backend, _sb_graphs, _sb_figures
-
-from .graphing import LineGraph, Line
-from .graphing import BarGraph, Bar, BarFactory</code></pre>
+from .globals import DEFAULT_SIZE</code></pre>
 </details>
 </section>
 <section>
@@ -68,13 +67,17 @@ from .graphing import BarGraph, Bar, BarFactory</code></pre>
 <dd>
 <div class="desc"><p>Core API calls and classes for ProgBG …</p></div>
 </dd>
+<dt><code class="name"><a title="progbg.formatters" href="formatters.html">progbg.formatters</a></code></dt>
+<dd>
+<div class="desc"><p>Common utility formatters used by Graphs</p></div>
+</dd>
 <dt><code class="name"><a title="progbg.globals" href="globals.html">progbg.globals</a></code></dt>
 <dd>
 <div class="desc"><p>Module to hold all the globals used within progbg</p></div>
 </dd>
-<dt><code class="name"><a title="progbg.graphing" href="graphing.html">progbg.graphing</a></code></dt>
+<dt><code class="name"><a title="progbg.graphing" href="graphing/index.html">progbg.graphing</a></code></dt>
 <dd>
-<div class="desc"><p>Graphing Module …</p></div>
+<div class="desc"><p>Graphing Primitives Module</p></div>
 </dd>
 <dt><code class="name"><a title="progbg.parsers" href="parsers.html">progbg.parsers</a></code></dt>
 <dd>
@@ -84,9 +87,10 @@ from .graphing import BarGraph, Bar, BarFactory</code></pre>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt><code class="name"><a title="progbg.subr" href="subr.html">progbg.subr</a></code></dt>
+<dt><code class="name"><a title="progbg.style" href="style.html">progbg.style</a></code></dt>
 <dd>
-<div class="desc"><p>Subroutines Module …</p></div>
+<div class="desc"><p>Styles chosen from
+<a href="https://colorbrewer2.org/#type=diverging&amp;scheme=PRGn&amp;n=6ef">https://colorbrewer2.org/#type=diverging&amp;scheme=PRGn&amp;n=6ef</a> _reset_default …</p></div>
 </dd>
 <dt><code class="name"><a title="progbg.util" href="util.html">progbg.util</a></code></dt>
 <dd>
@@ -111,11 +115,12 @@ from .graphing import BarGraph, Bar, BarFactory</code></pre>
 <ul>
 <li><code><a title="progbg.cli" href="cli.html">progbg.cli</a></code></li>
 <li><code><a title="progbg.core" href="core.html">progbg.core</a></code></li>
+<li><code><a title="progbg.formatters" href="formatters.html">progbg.formatters</a></code></li>
 <li><code><a title="progbg.globals" href="globals.html">progbg.globals</a></code></li>
-<li><code><a title="progbg.graphing" href="graphing.html">progbg.graphing</a></code></li>
+<li><code><a title="progbg.graphing" href="graphing/index.html">progbg.graphing</a></code></li>
 <li><code><a title="progbg.parsers" href="parsers.html">progbg.parsers</a></code></li>
 <li><code><a title="progbg.serve" href="serve/index.html">progbg.serve</a></code></li>
-<li><code><a title="progbg.subr" href="subr.html">progbg.subr</a></code></li>
+<li><code><a title="progbg.style" href="style.html">progbg.style</a></code></li>
 <li><code><a title="progbg.util" href="util.html">progbg.util</a></code></li>
 </ul>
 </li>

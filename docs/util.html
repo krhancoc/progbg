@@ -28,38 +28,123 @@
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">&#34;&#34;&#34;Utility function and classes used throughout progbg&#34;&#34;&#34;
-
 import itertools
 import sys
 import os
 from pprint import pformat
 from typing import List, Dict, Tuple
 
+
+import numpy as np
+import pandas as pd
+
 from .globals import _sb_rnames
 
-def reformat_large(tick_val):
-    if tick_val &gt;= 1000000000:
-        val = round(tick_val / 1000000000, 1)
-        new_tick_format = &#39;{:}B&#39;.format(val)
-    elif tick_val &gt;= 1000000:
-        val = round(tick_val / 1000000, 1)
-        new_tick_format = &#39;{:}M&#39;.format(val)
-    elif tick_val &gt;= 1000:
-        val = round(tick_val / 1000, 1)
-        new_tick_format = &#39;{:}K&#39;.format(val)
-    else:
-        new_tick_format = tick_val
+REQUIRED = object()
 
-    new_tick_format = str(new_tick_format)
 
-    index_of_decimal = new_tick_format.find(&#34;.&#34;)
-    if index_of_decimal != -1:
-        value_after_decimal = new_tick_format[index_of_decimal + 1]
-        if value_after_decimal == &#34;0&#34;:
-            new_tick_format = new_tick_format[0:index_of_decimal] + \
-                new_tick_format[index_of_decimal + 2:]
+class Metrics:
+    &#34;&#34;&#34;Metrics collection object
 
-    return new_tick_format
+    This object is given to executions to allow for users to specify what data
+    must be kept. The main functio that should be used by users is the add_metric
+    function, which simply appends data points to a list to be used to calculate
+    means and standard deviation later
+    &#34;&#34;&#34;
+
+    def __init__(self):
+        self._vars = dict()
+        self._consts = dict()
+
+    def add_metric(self, key, val):
+        &#34;&#34;&#34;Add a data point to a metric key
+
+        Args:
+            key (str): Key to add value to
+            val (int, float): value to append to a list
+
+        Example:
+            Suppose we have a parser we wish to use. This parser takes
+            both a metrics object and a file path.
+
+            &gt;&gt;&gt; def my_parser(metrics: Metrics, out: str):
+            &gt;&gt;&gt;     with open(out, &#39;r&#39;) as f:
+            &gt;&gt;&gt;         mydata = f.read()
+            &gt;&gt;&gt;         val = find_specific_value(mydata)
+            &gt;&gt;&gt;         metrics.add_metric(&#39;my-stored-val&#39;, val)
+        &#34;&#34;&#34;
+        if key not in self._vars:
+            self._vars[key] = [val]
+        else:
+            self._vars[key].append(val)
+
+    def to_file(self, path):
+        stats = self.get_stats()
+        with open(path, &#34;w&#34;) as f:
+            for k, val in stats.items():
+                f.write(&#34;{}={}\n&#34;.format(k, val))
+
+    def add_metrics(self, key, vals):
+        for v in vals:
+            self.add_metric(key, v)
+
+    def stat(self, key):
+        obj = self.get_stats()
+        return obj[key]
+
+    def __getitem__(self, key):
+        obj = self.get_stats()
+        if key in self._vars:
+            return self._vars[key]
+
+        return self._consts[key]
+
+    def __contains__(self, key):
+        return (key in self._vars) or (key in self._consts)
+
+    def add_constant(self, key, val):
+        &#34;&#34;&#34;Add a constant to a metric object
+
+        Args:
+            key (str): Key for constant
+            val (obj): Value of this constant
+        &#34;&#34;&#34;
+        self._consts[key] = val
+
+    def _combine(self, other: Dict):
+        for key, val in other._vars.items():
+            if key in self._vars:
+                self._vars[key].append(val)
+            else:
+                self._vars[key] = val
+
+    def get_stats(self):
+        &#34;&#34;&#34;Returns the metrics object
+
+        Will return the current metrics of this object. Each associated
+        key will have its mean and standard deviation calculated.  Standard deviation
+        is stored within a &#34;_std&#34; key.
+
+        For example. If I had some metrics with associated key &#34;my-metric&#34;. The returned
+        dictionary would store the mean at key &#34;my-metrics&#34;, and store standard deviation
+        at key &#34;my-metrics_std&#34;.  This allows users to also manually set standard deviation
+        of objects if needed. For example when using then `plan_parse` style executions.
+
+        Returns:
+            dict
+        &#34;&#34;&#34;
+        obj = dict()
+        for key, val in self._vars.items():
+            obj[key] = np.mean(val)
+            obj[key + &#34;_std&#34;] = np.std(val)
+        for key, val in self._consts.items():
+            obj[key] = val
+
+        return obj
+
+    def __repr__(self):
+        obj = self.get_stats()
+        return pformat(obj)
 
 
 def normalize(group_list, index_to):
@@ -72,9 +157,8 @@ def normalize(group_list, index_to):
     return final_list
 
 
-
 def silence_print():
-    sys.stdout = open(os.devnull, &#39;w&#39;)
+    sys.stdout = open(os.devnull, &#34;w&#34;)
 
 
 def restore_print():
@@ -89,7 +173,7 @@ def error(strn: str):
 
 def dump_obj(file: str, obj: Dict):
     &#34;&#34;&#34;Dump dictionary to file key=val&#34;&#34;&#34;
-    with open(file, &#39;w&#39;) as ofile:
+    with open(file, &#34;w&#34;) as ofile:
         for key, val in obj.items():
             line = &#34;{}={}\n&#34;.format(key, val)
             ofile.write(line)
@@ -98,9 +182,9 @@ def dump_obj(file: str, obj: Dict):
 def retrieve_obj(file: str) -&gt; Dict:
     &#34;&#34;&#34;Retrieve dictionary from file key=val&#34;&#34;&#34;
     obj = {}
-    with open(file, &#39;r&#39;) as ofile:
+    with open(file, &#34;r&#34;) as ofile:
         for line in ofile.readlines():
-            vals = line.strip().split(&#39;=&#39;)
+            vals = line.strip().split(&#34;=&#34;)
             try:
                 obj[vals[0]] = vals[1]
             except:
@@ -121,17 +205,19 @@ class Variables:
         var: A tuple of an argument name and some iterable object
     &#34;&#34;&#34;
 
-    def __init__(self, consts: Dict = None,
-                 var: List[Tuple[str, List]] = None) -&gt; None:
+    def __init__(self, consts: Dict = None, var: List[Tuple[str, List]] = None) -&gt; None:
         if len(var):
             if any([i in consts for i in _sb_rnames]) or (var[0] in _sb_rnames):
                 raise Exception(
                     &#34;Cannot use a reserved name for a variable {}&#34;.format(
-                        pformat(_sb_rnames)))
+                        pformat(_sb_rnames)
+                    )
+                )
             for vals in var:
                 if vals[0] in consts:
-                    raise Exception(&#34;Name defined as constant and varying: {}&#34;.format(
-                        vals[0]))
+                    raise Exception(
+                        &#34;Name defined as constant and varying: {}&#34;.format(vals[0])
+                    )
 
         self.consts = consts
         self.var = var
@@ -186,24 +272,24 @@ class Variables:
 
 class Backend:
     def __init__(self, path, variables):
-        self.backends = path.split(&#39;/&#39;)
+        self.backends = path.split(&#34;/&#34;)
         self.runtime_variables = variables
 
     @staticmethod
     def user_to_sql(path):
-        return &#34;_b_&#34;.join(path.split(&#39;/&#39;))
+        return &#34;_b_&#34;.join(path.split(&#34;/&#34;))
 
     @staticmethod
     def user_to_out(path):
-        return &#34;-&#34;.join(path.split(&#39;/&#39;))
+        return &#34;-&#34;.join(path.split(&#34;/&#34;))
 
     @staticmethod
     def out_to_user(path):
-        return &#34;/&#34;.join(path.split(&#39;-&#39;))
+        return &#34;/&#34;.join(path.split(&#34;-&#34;))
 
     @staticmethod
     def out_to_sql(path):
-        return &#34;_b_&#34;.join(path.split(&#39;-&#39;))
+        return &#34;_b_&#34;.join(path.split(&#34;-&#34;))
 
     @property
     def path_sql(self):
@@ -218,8 +304,19 @@ class Backend:
         return &#34;-&#34;.join(self.backends)
 
     def __eq__(self, path):
-        return (self.path_sql == path) or (self.path_out == path) or \
-            (self.path_user == path)</code></pre>
+        return (
+            (self.path_sql == path)
+            or (self.path_out == path)
+            or (self.path_user == path)
+        )
+
+
+class ExecutionStub:
+    def __init__(self, **kwargs):
+        metric = Metrics()
+        for k, v in kwargs.items():
+            metric.add_constant(k, v)
+        self._cached = [metric]</code></pre>
 </details>
 </section>
 <section>
@@ -240,7 +337,7 @@ class Backend:
 </summary>
 <pre><code class="python">def dump_obj(file: str, obj: Dict):
     &#34;&#34;&#34;Dump dictionary to file key=val&#34;&#34;&#34;
-    with open(file, &#39;w&#39;) as ofile:
+    with open(file, &#34;w&#34;) as ofile:
         for key, val in obj.items():
             line = &#34;{}={}\n&#34;.format(key, val)
             ofile.write(line)</code></pre>
@@ -279,40 +376,6 @@ class Backend:
     return final_list</code></pre>
 </details>
 </dd>
-<dt id="progbg.util.reformat_large"><code class="name flex">
-<span>def <span class="ident">reformat_large</span></span>(<span>tick_val)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def reformat_large(tick_val):
-    if tick_val &gt;= 1000000000:
-        val = round(tick_val / 1000000000, 1)
-        new_tick_format = &#39;{:}B&#39;.format(val)
-    elif tick_val &gt;= 1000000:
-        val = round(tick_val / 1000000, 1)
-        new_tick_format = &#39;{:}M&#39;.format(val)
-    elif tick_val &gt;= 1000:
-        val = round(tick_val / 1000, 1)
-        new_tick_format = &#39;{:}K&#39;.format(val)
-    else:
-        new_tick_format = tick_val
-
-    new_tick_format = str(new_tick_format)
-
-    index_of_decimal = new_tick_format.find(&#34;.&#34;)
-    if index_of_decimal != -1:
-        value_after_decimal = new_tick_format[index_of_decimal + 1]
-        if value_after_decimal == &#34;0&#34;:
-            new_tick_format = new_tick_format[0:index_of_decimal] + \
-                new_tick_format[index_of_decimal + 2:]
-
-    return new_tick_format</code></pre>
-</details>
-</dd>
 <dt id="progbg.util.restore_print"><code class="name flex">
 <span>def <span class="ident">restore_print</span></span>(<span>)</span>
 </code></dt>
@@ -339,9 +402,9 @@ class Backend:
 <pre><code class="python">def retrieve_obj(file: str) -&gt; Dict:
     &#34;&#34;&#34;Retrieve dictionary from file key=val&#34;&#34;&#34;
     obj = {}
-    with open(file, &#39;r&#39;) as ofile:
+    with open(file, &#34;r&#34;) as ofile:
         for line in ofile.readlines():
-            vals = line.strip().split(&#39;=&#39;)
+            vals = line.strip().split(&#34;=&#34;)
             try:
                 obj[vals[0]] = vals[1]
             except:
@@ -360,7 +423,7 @@ class Backend:
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def silence_print():
-    sys.stdout = open(os.devnull, &#39;w&#39;)</code></pre>
+    sys.stdout = open(os.devnull, &#34;w&#34;)</code></pre>
 </details>
 </dd>
 </dl>
@@ -380,24 +443,24 @@ class Backend:
 </summary>
 <pre><code class="python">class Backend:
     def __init__(self, path, variables):
-        self.backends = path.split(&#39;/&#39;)
+        self.backends = path.split(&#34;/&#34;)
         self.runtime_variables = variables
 
     @staticmethod
     def user_to_sql(path):
-        return &#34;_b_&#34;.join(path.split(&#39;/&#39;))
+        return &#34;_b_&#34;.join(path.split(&#34;/&#34;))
 
     @staticmethod
     def user_to_out(path):
-        return &#34;-&#34;.join(path.split(&#39;/&#39;))
+        return &#34;-&#34;.join(path.split(&#34;/&#34;))
 
     @staticmethod
     def out_to_user(path):
-        return &#34;/&#34;.join(path.split(&#39;-&#39;))
+        return &#34;/&#34;.join(path.split(&#34;-&#34;))
 
     @staticmethod
     def out_to_sql(path):
-        return &#34;_b_&#34;.join(path.split(&#39;-&#39;))
+        return &#34;_b_&#34;.join(path.split(&#34;-&#34;))
 
     @property
     def path_sql(self):
@@ -412,8 +475,11 @@ class Backend:
         return &#34;-&#34;.join(self.backends)
 
     def __eq__(self, path):
-        return (self.path_sql == path) or (self.path_out == path) or \
-            (self.path_user == path)</code></pre>
+        return (
+            (self.path_sql == path)
+            or (self.path_out == path)
+            or (self.path_user == path)
+        )</code></pre>
 </details>
 <h3>Static methods</h3>
 <dl>
@@ -428,7 +494,7 @@ class Backend:
 </summary>
 <pre><code class="python">@staticmethod
 def out_to_sql(path):
-    return &#34;_b_&#34;.join(path.split(&#39;-&#39;))</code></pre>
+    return &#34;_b_&#34;.join(path.split(&#34;-&#34;))</code></pre>
 </details>
 </dd>
 <dt id="progbg.util.Backend.out_to_user"><code class="name flex">
@@ -442,7 +508,7 @@ def out_to_sql(path):
 </summary>
 <pre><code class="python">@staticmethod
 def out_to_user(path):
-    return &#34;/&#34;.join(path.split(&#39;-&#39;))</code></pre>
+    return &#34;/&#34;.join(path.split(&#34;-&#34;))</code></pre>
 </details>
 </dd>
 <dt id="progbg.util.Backend.user_to_out"><code class="name flex">
@@ -456,7 +522,7 @@ def out_to_user(path):
 </summary>
 <pre><code class="python">@staticmethod
 def user_to_out(path):
-    return &#34;-&#34;.join(path.split(&#39;/&#39;))</code></pre>
+    return &#34;-&#34;.join(path.split(&#34;/&#34;))</code></pre>
 </details>
 </dd>
 <dt id="progbg.util.Backend.user_to_sql"><code class="name flex">
@@ -470,7 +536,7 @@ def user_to_out(path):
 </summary>
 <pre><code class="python">@staticmethod
 def user_to_sql(path):
-    return &#34;_b_&#34;.join(path.split(&#39;/&#39;))</code></pre>
+    return &#34;_b_&#34;.join(path.split(&#34;/&#34;))</code></pre>
 </details>
 </dd>
 </dl>
@@ -514,6 +580,307 @@ def path_user(self):
 </dd>
 </dl>
 </dd>
+<dt id="progbg.util.ExecutionStub"><code class="flex name class">
+<span>class <span class="ident">ExecutionStub</span></span>
+<span>(</span><span>**kwargs)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class ExecutionStub:
+    def __init__(self, **kwargs):
+        metric = Metrics()
+        for k, v in kwargs.items():
+            metric.add_constant(k, v)
+        self._cached = [metric]</code></pre>
+</details>
+</dd>
+<dt id="progbg.util.Metrics"><code class="flex name class">
+<span>class <span class="ident">Metrics</span></span>
+</code></dt>
+<dd>
+<div class="desc"><p>Metrics collection object</p>
+<p>This object is given to executions to allow for users to specify what data
+must be kept. The main functio that should be used by users is the add_metric
+function, which simply appends data points to a list to be used to calculate
+means and standard deviation later</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class Metrics:
+    &#34;&#34;&#34;Metrics collection object
+
+    This object is given to executions to allow for users to specify what data
+    must be kept. The main functio that should be used by users is the add_metric
+    function, which simply appends data points to a list to be used to calculate
+    means and standard deviation later
+    &#34;&#34;&#34;
+
+    def __init__(self):
+        self._vars = dict()
+        self._consts = dict()
+
+    def add_metric(self, key, val):
+        &#34;&#34;&#34;Add a data point to a metric key
+
+        Args:
+            key (str): Key to add value to
+            val (int, float): value to append to a list
+
+        Example:
+            Suppose we have a parser we wish to use. This parser takes
+            both a metrics object and a file path.
+
+            &gt;&gt;&gt; def my_parser(metrics: Metrics, out: str):
+            &gt;&gt;&gt;     with open(out, &#39;r&#39;) as f:
+            &gt;&gt;&gt;         mydata = f.read()
+            &gt;&gt;&gt;         val = find_specific_value(mydata)
+            &gt;&gt;&gt;         metrics.add_metric(&#39;my-stored-val&#39;, val)
+        &#34;&#34;&#34;
+        if key not in self._vars:
+            self._vars[key] = [val]
+        else:
+            self._vars[key].append(val)
+
+    def to_file(self, path):
+        stats = self.get_stats()
+        with open(path, &#34;w&#34;) as f:
+            for k, val in stats.items():
+                f.write(&#34;{}={}\n&#34;.format(k, val))
+
+    def add_metrics(self, key, vals):
+        for v in vals:
+            self.add_metric(key, v)
+
+    def stat(self, key):
+        obj = self.get_stats()
+        return obj[key]
+
+    def __getitem__(self, key):
+        obj = self.get_stats()
+        if key in self._vars:
+            return self._vars[key]
+
+        return self._consts[key]
+
+    def __contains__(self, key):
+        return (key in self._vars) or (key in self._consts)
+
+    def add_constant(self, key, val):
+        &#34;&#34;&#34;Add a constant to a metric object
+
+        Args:
+            key (str): Key for constant
+            val (obj): Value of this constant
+        &#34;&#34;&#34;
+        self._consts[key] = val
+
+    def _combine(self, other: Dict):
+        for key, val in other._vars.items():
+            if key in self._vars:
+                self._vars[key].append(val)
+            else:
+                self._vars[key] = val
+
+    def get_stats(self):
+        &#34;&#34;&#34;Returns the metrics object
+
+        Will return the current metrics of this object. Each associated
+        key will have its mean and standard deviation calculated.  Standard deviation
+        is stored within a &#34;_std&#34; key.
+
+        For example. If I had some metrics with associated key &#34;my-metric&#34;. The returned
+        dictionary would store the mean at key &#34;my-metrics&#34;, and store standard deviation
+        at key &#34;my-metrics_std&#34;.  This allows users to also manually set standard deviation
+        of objects if needed. For example when using then `plan_parse` style executions.
+
+        Returns:
+            dict
+        &#34;&#34;&#34;
+        obj = dict()
+        for key, val in self._vars.items():
+            obj[key] = np.mean(val)
+            obj[key + &#34;_std&#34;] = np.std(val)
+        for key, val in self._consts.items():
+            obj[key] = val
+
+        return obj
+
+    def __repr__(self):
+        obj = self.get_stats()
+        return pformat(obj)</code></pre>
+</details>
+<h3>Methods</h3>
+<dl>
+<dt id="progbg.util.Metrics.add_constant"><code class="name flex">
+<span>def <span class="ident">add_constant</span></span>(<span>self, key, val)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Add a constant to a metric object</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>key</code></strong> :&ensp;<code>str</code></dt>
+<dd>Key for constant</dd>
+<dt><strong><code>val</code></strong> :&ensp;<code>obj</code></dt>
+<dd>Value of this constant</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def add_constant(self, key, val):
+    &#34;&#34;&#34;Add a constant to a metric object
+
+    Args:
+        key (str): Key for constant
+        val (obj): Value of this constant
+    &#34;&#34;&#34;
+    self._consts[key] = val</code></pre>
+</details>
+</dd>
+<dt id="progbg.util.Metrics.add_metric"><code class="name flex">
+<span>def <span class="ident">add_metric</span></span>(<span>self, key, val)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Add a data point to a metric key</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>key</code></strong> :&ensp;<code>str</code></dt>
+<dd>Key to add value to</dd>
+<dt><strong><code>val</code></strong> :&ensp;<code>int, float</code></dt>
+<dd>value to append to a list</dd>
+</dl>
+<h2 id="example">Example</h2>
+<p>Suppose we have a parser we wish to use. This parser takes
+both a metrics object and a file path.</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; def my_parser(metrics: Metrics, out: str):
+&gt;&gt;&gt;     with open(out, 'r') as f:
+&gt;&gt;&gt;         mydata = f.read()
+&gt;&gt;&gt;         val = find_specific_value(mydata)
+&gt;&gt;&gt;         metrics.add_metric('my-stored-val', val)
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def add_metric(self, key, val):
+    &#34;&#34;&#34;Add a data point to a metric key
+
+    Args:
+        key (str): Key to add value to
+        val (int, float): value to append to a list
+
+    Example:
+        Suppose we have a parser we wish to use. This parser takes
+        both a metrics object and a file path.
+
+        &gt;&gt;&gt; def my_parser(metrics: Metrics, out: str):
+        &gt;&gt;&gt;     with open(out, &#39;r&#39;) as f:
+        &gt;&gt;&gt;         mydata = f.read()
+        &gt;&gt;&gt;         val = find_specific_value(mydata)
+        &gt;&gt;&gt;         metrics.add_metric(&#39;my-stored-val&#39;, val)
+    &#34;&#34;&#34;
+    if key not in self._vars:
+        self._vars[key] = [val]
+    else:
+        self._vars[key].append(val)</code></pre>
+</details>
+</dd>
+<dt id="progbg.util.Metrics.add_metrics"><code class="name flex">
+<span>def <span class="ident">add_metrics</span></span>(<span>self, key, vals)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def add_metrics(self, key, vals):
+    for v in vals:
+        self.add_metric(key, v)</code></pre>
+</details>
+</dd>
+<dt id="progbg.util.Metrics.get_stats"><code class="name flex">
+<span>def <span class="ident">get_stats</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns the metrics object</p>
+<p>Will return the current metrics of this object. Each associated
+key will have its mean and standard deviation calculated.
+Standard deviation
+is stored within a "_std" key.</p>
+<p>For example. If I had some metrics with associated key "my-metric". The returned
+dictionary would store the mean at key "my-metrics", and store standard deviation
+at key "my-metrics_std".
+This allows users to also manually set standard deviation
+of objects if needed. For example when using then <code>plan_parse</code> style executions.</p>
+<h2 id="returns">Returns</h2>
+<p>dict</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_stats(self):
+    &#34;&#34;&#34;Returns the metrics object
+
+    Will return the current metrics of this object. Each associated
+    key will have its mean and standard deviation calculated.  Standard deviation
+    is stored within a &#34;_std&#34; key.
+
+    For example. If I had some metrics with associated key &#34;my-metric&#34;. The returned
+    dictionary would store the mean at key &#34;my-metrics&#34;, and store standard deviation
+    at key &#34;my-metrics_std&#34;.  This allows users to also manually set standard deviation
+    of objects if needed. For example when using then `plan_parse` style executions.
+
+    Returns:
+        dict
+    &#34;&#34;&#34;
+    obj = dict()
+    for key, val in self._vars.items():
+        obj[key] = np.mean(val)
+        obj[key + &#34;_std&#34;] = np.std(val)
+    for key, val in self._consts.items():
+        obj[key] = val
+
+    return obj</code></pre>
+</details>
+</dd>
+<dt id="progbg.util.Metrics.stat"><code class="name flex">
+<span>def <span class="ident">stat</span></span>(<span>self, key)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def stat(self, key):
+    obj = self.get_stats()
+    return obj[key]</code></pre>
+</details>
+</dd>
+<dt id="progbg.util.Metrics.to_file"><code class="name flex">
+<span>def <span class="ident">to_file</span></span>(<span>self, path)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def to_file(self, path):
+    stats = self.get_stats()
+    with open(path, &#34;w&#34;) as f:
+        for k, val in stats.items():
+            f.write(&#34;{}={}\n&#34;.format(k, val))</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
 <dt id="progbg.util.Variables"><code class="flex name class">
 <span>class <span class="ident">Variables</span></span>
 <span>(</span><span>consts: Dict = None, var: List[Tuple[str, List]] = None)</span>
@@ -545,17 +912,19 @@ class (see Variables.produce_args documentation)</p>
         var: A tuple of an argument name and some iterable object
     &#34;&#34;&#34;
 
-    def __init__(self, consts: Dict = None,
-                 var: List[Tuple[str, List]] = None) -&gt; None:
+    def __init__(self, consts: Dict = None, var: List[Tuple[str, List]] = None) -&gt; None:
         if len(var):
             if any([i in consts for i in _sb_rnames]) or (var[0] in _sb_rnames):
                 raise Exception(
                     &#34;Cannot use a reserved name for a variable {}&#34;.format(
-                        pformat(_sb_rnames)))
+                        pformat(_sb_rnames)
+                    )
+                )
             for vals in var:
                 if vals[0] in consts:
-                    raise Exception(&#34;Name defined as constant and varying: {}&#34;.format(
-                        vals[0]))
+                    raise Exception(
+                        &#34;Name defined as constant and varying: {}&#34;.format(vals[0])
+                    )
 
         self.consts = consts
         self.var = var
@@ -729,7 +1098,6 @@ var = [("x" ,range(0, 3, 1)), ("test", range(0, 5, 2))]
 <li><code><a title="progbg.util.dump_obj" href="#progbg.util.dump_obj">dump_obj</a></code></li>
 <li><code><a title="progbg.util.error" href="#progbg.util.error">error</a></code></li>
 <li><code><a title="progbg.util.normalize" href="#progbg.util.normalize">normalize</a></code></li>
-<li><code><a title="progbg.util.reformat_large" href="#progbg.util.reformat_large">reformat_large</a></code></li>
 <li><code><a title="progbg.util.restore_print" href="#progbg.util.restore_print">restore_print</a></code></li>
 <li><code><a title="progbg.util.retrieve_obj" href="#progbg.util.retrieve_obj">retrieve_obj</a></code></li>
 <li><code><a title="progbg.util.silence_print" href="#progbg.util.silence_print">silence_print</a></code></li>
@@ -747,6 +1115,20 @@ var = [("x" ,range(0, 3, 1)), ("test", range(0, 5, 2))]
 <li><code><a title="progbg.util.Backend.path_user" href="#progbg.util.Backend.path_user">path_user</a></code></li>
 <li><code><a title="progbg.util.Backend.user_to_out" href="#progbg.util.Backend.user_to_out">user_to_out</a></code></li>
 <li><code><a title="progbg.util.Backend.user_to_sql" href="#progbg.util.Backend.user_to_sql">user_to_sql</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="progbg.util.ExecutionStub" href="#progbg.util.ExecutionStub">ExecutionStub</a></code></h4>
+</li>
+<li>
+<h4><code><a title="progbg.util.Metrics" href="#progbg.util.Metrics">Metrics</a></code></h4>
+<ul class="two-column">
+<li><code><a title="progbg.util.Metrics.add_constant" href="#progbg.util.Metrics.add_constant">add_constant</a></code></li>
+<li><code><a title="progbg.util.Metrics.add_metric" href="#progbg.util.Metrics.add_metric">add_metric</a></code></li>
+<li><code><a title="progbg.util.Metrics.add_metrics" href="#progbg.util.Metrics.add_metrics">add_metrics</a></code></li>
+<li><code><a title="progbg.util.Metrics.get_stats" href="#progbg.util.Metrics.get_stats">get_stats</a></code></li>
+<li><code><a title="progbg.util.Metrics.stat" href="#progbg.util.Metrics.stat">stat</a></code></li>
+<li><code><a title="progbg.util.Metrics.to_file" href="#progbg.util.Metrics.to_file">to_file</a></code></li>
 </ul>
 </li>
 <li>
