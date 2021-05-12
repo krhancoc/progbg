@@ -86,12 +86,9 @@ exec2 = sb.plan_parse("exec1_parsed", "tests/test.txt", text_parser)
 bf = graph.BarFactory(exec)
 
 
-
 graph1 = sb.plan_graph(
     graph.BarGraph(
-        [
-            bf(["low"]), bf(["low", "mid", "high"])
-        ],
+        [bf(["low"]), bf(["low", "mid", "high"])],
         restrict_on={
             "pass_me_in": 0,
             "x": 0,
@@ -147,9 +144,10 @@ custom_graph = sb.plan_graph(
 
 
 sb.plan_figure(
-    "figure.pgf", 
+    "figure.pgf",
     [
-        [graph1,     graph1,       graph1], 
-        [cdf_graph,  custom_graph, custom_graph],
-        [cdf_graph,  custom_graph, custom_graph]]
+        [graph1, graph1, graph1],
+        [cdf_graph, custom_graph, custom_graph],
+        [cdf_graph, custom_graph, custom_graph],
+    ],
 )
