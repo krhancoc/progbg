@@ -3,6 +3,7 @@ from pprint import pformat
 from enum import Enum
 import pandas as pd
 import os
+import math
 
 import matplotlib as mpl
 import numpy as np
@@ -15,7 +16,7 @@ from ._graph import Graph, GraphObject
 from ..globals import _sb_executions
 from ..util import Backend, retrieve_obj, error
 from ..util import ExecutionStub
-from ..style import get_style, set_style
+from ..style import get_style, set_style, get_style_cycler
 
 
 class Bar(GraphObject):
@@ -93,6 +94,7 @@ class BarGroup(GraphObject):
 
     def __init__(self, executions, cat, label):
         self.wls = executions
+        print(self.wls)
         self.cat = cat
         self.label = label
 
@@ -102,6 +104,9 @@ class BarGroup(GraphObject):
             bars.append(Bar([w], [self.cat], [self.label[i]]))
         dfs = [b.get_data(restrict_on).T for b in bars]
         return dfs
+
+    def size(self):
+        return len(self.wls)
 
     def bars(self):
         bars = []
@@ -192,15 +197,59 @@ class BarGraph(Graph):
             cols_std = [c for c in data.columns if len(c) > 4 and c[-4:] == "_std"]
             df = data[cols].T
             std = data[cols_std]
-            std.columns = [x[:-4] for x in std.columns]
+            std.columns = [x for x in df.T.columns]
             std = std.T
-            df.plot.bar(rot=-90, ax=ax, yerr=std, capsize=4, width=self.width)
-            if self.log:
-                ax.set_yscale("log")
+
+            ss = (self.workloads[0].size() * self.width) + 0.2
+            end = len(self.workloads) * ss
+            index = np.arange(start=0, stop=end, step=ss)
+            inner = np.arange(
+                start=0, stop=self.width * self.workloads[0].size(), step=self.width
+            )
+            # Bump inner ranges based of number in the groups
+            mid = inner[int(len(inner) / 2)]
+            if len(inner) % 2:
+                inner = inner - mid - self.width
+            else:
+                inner = inner - mid
+
+            # Even odd adjustments
+            mid = inner[int(len(inner) / 2)]
+            if len(inner) % 2:
+                ticks = [l + mid for l in index]
+            else:
+                ticks = [l + mid - (self.width / 2) for l in index]
+
+            for i, x in enumerate(df.index):
+                style = iter(get_style_cycler())
+                group = df.loc[x]
+                for ii, x in enumerate(group.index):
+                    s = next(style)
+                    ax.bar(
+                        index[i] + inner[ii], group[x], width=self.width, **s, label=x
+                    )
+            labels = [x for x in df.index]
+
+            ax.set_xticks(ticks)
+            ax.set_xticklabels(labels)
+
         else:
             data = pd.concat(data, axis=1).T
+            data.replace(np.nan, 0)
             cols = [c for c in data.columns if c[-4:] != "_std"]
             cols_std = [c for c in data.columns if len(c) > 4 and c[-4:] == "_std"]
             df = data[cols]
-            std = data[cols_std].T
-            df.plot(rot=-90, kind="bar", stacked=True, ax=ax)
+            std = data[cols_std]
+            std.columns = [c for c in df.columns]
+            index = np.arange(len(df.index))
+            # Unfortunately styles don't seem to stick currently with pandas
+            # so not using that functionality as styling is important!
+            bottom = np.array([0] * len(df.T.columns))
+            style = iter(get_style_cycler())
+            for x in df.columns:
+                s = next(style)
+                arr = np.array(df[x].tolist())
+                nans = np.isnan(arr)
+                arr[nans] = 0
+                ax.bar(index, arr, label=x, bottom=bottom, **s)
+                bottom = np.add(bottom, arr)

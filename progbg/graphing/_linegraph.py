@@ -17,6 +17,7 @@ from ..util import Backend, retrieve_obj, error
 from ..util import ExecutionStub
 from ..style import get_style, set_style, get_style_cycler
 
+
 class Line(GraphObject):
     """Line Object
     Used to specify a line within a graph.
@@ -44,9 +45,9 @@ class Line(GraphObject):
         >>> l4_constant = Line(100, "data1")
     """
 
-    def __init__(self, execution, value: str, 
-            x=None, label: str = None, 
-            style="--", color=None):
+    def __init__(
+        self, execution, value: str, x=None, label: str = None, style="--", color=None
+    ):
         if label:
             self.label = label
         else:
@@ -64,7 +65,7 @@ class Line(GraphObject):
 
         if isinstance(x, list):
             assert len(x) == len(
-               execution 
+                execution
             ), "When x is a list, execution list length must equal x list length"
 
     def get_data(self, restrict_on, iter=None):
@@ -169,8 +170,8 @@ class LineGraph(Graph):
             x_std = d[cols_std]
 
             # Since we are lines should only have one value in each column
-            lab = [ c for c in x.columns ][0]
-            lab_std = [ c for c in x_std.columns ][0]
+            lab = [c for c in x.columns][0]
+            lab_std = [c for c in x_std.columns][0]
 
             # Check for constant label
             if "CONSTANT" in d.index:
@@ -179,8 +180,8 @@ class LineGraph(Graph):
             else:
                 y = [x for x in d.T.columns]
                 # Extract lists from the dataframe
-                x_list = [x.loc[v][lab] for v in y ]
-                x_std_list = [x_std.loc[v][lab_std] for v in y ]
+                x_list = [x.loc[v][lab] for v in y]
+                x_std_list = [x_std.loc[v][lab_std] for v in y]
                 if self.std:
                     ax.errorbar(y, x_list, yerr=x_std_list, **tmp)
                 else:

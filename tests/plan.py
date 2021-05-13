@@ -148,7 +148,7 @@ b2 = graph.Bar([(20, 0)], ["data2"])
 b3 = graph.Bar([(30, 0)], ["data3"])
 const = sb.plan_graph(
     graph.BarGraph(
-        [b1,b2,b3],
+        [b1, b2, b3],
         width=0.5,
         out="consttest.svg",
         style="hatch_a",
@@ -156,14 +156,61 @@ const = sb.plan_graph(
 )
 
 b1 = graph.BarGroup([(10, 0), (20, 0), (30, 0)], "data1", label=["G1", "G2", "G3"])
+b2 = graph.BarGroup([(30, 0), (15, 0), (10, 0)], "data2", label=["G1", "G2", "G3"])
 const = sb.plan_graph(
     graph.BarGraph(
-        [b1],
+        [b1, b2],
         width=0.5,
         out="constgrouptest.svg",
         style="hatch_a",
     )
 )
+
+b1 = graph.BarGroup([(10, 0), (20, 0)], "data1", label=["G1", "G2"])
+b2 = graph.BarGroup([(30, 0), (15, 0)], "data2", label=["G1", "G2"])
+const = sb.plan_graph(
+    graph.BarGraph(
+        [b1, b2],
+        width=0.5,
+        out="constgrouptest-even.svg",
+        style="hatch_a",
+    )
+)
+
+b1 = graph.BarGroup(
+    [(10, 0), (20, 0), (30, 0), (44, 0), (30, 0), (44, 0)],
+    "data1",
+    label=["G1", "G2", "G3", "G4", "G5", "G6"],
+)
+const = sb.plan_graph(
+    graph.BarGraph(
+        [b1],
+        width=0.5,
+        out="constgrouptest-even2.svg",
+        style="hatch_a",
+    )
+)
+
+
+b1 = graph.BarGroup(
+    [(10, 0), (20, 0), (30, 0), (40, 0), (22, 0)],
+    "data1",
+    label=["G1", "G2", "G3", "G4", "G5"],
+)
+b2 = graph.BarGroup(
+    [(10, 0), (20, 0), (30, 0), (40, 0), (22, 0)],
+    "data2",
+    label=["G1", "G2", "G3", "G4", "G5"],
+)
+const = sb.plan_graph(
+    graph.BarGraph(
+        [b1, b2],
+        width=0.5,
+        out="constgrouptest-odd2.svg",
+        style="hatch_a",
+    )
+)
+
 
 line1 = graph.Line(200, "low")
 line2 = graph.Line(exec, "mid", x="x", label="Mid Label")

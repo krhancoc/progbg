@@ -48,7 +48,7 @@ _color_styles = dict(
 )
 
 _hatch_styles = dict(
-    a=["**", "++", "//", "xx", "oo"],
+    a=["**", "++", "//", "xx", "oo", "O", "\\", "*", "o"],
 )
 
 _line_styles = dict(a=["-", "-.", "--", ":"])
@@ -95,7 +95,11 @@ def set_style(style_name):
         vals = style_name.split("_")
         if vals[0] == "hatch":
             style_list = _hatch_styles[vals[1]]
-            c = cycler(hatch=style_list)
+            c = cycler(
+                hatch=style_list,
+                color=["#FFFFFF"] * len(style_list),
+                edgecolor=["#000000"] * len(style_list),
+            )
         elif vals[0] == "line":
             style_list = _line_styles[vals[1]]
             c = cycler(
