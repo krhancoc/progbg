@@ -113,6 +113,7 @@ graph2 = sb.plan_graph(
         style="color_b",
     )
 )
+
 line1 = graph.Line(exec, "low", x="x", style="--")
 line2 = graph.Line(exec, "mid", x="x", label="Mid Label")
 line3 = graph.Line(exec, "high", x="x", label="High Label")
@@ -139,6 +140,44 @@ custom_graph = sb.plan_graph(
         out="custom_style.svg",
         title="Custom Style Graph",
         style=cycler(color=["blue", "green"]),
+    )
+)
+
+b1 = graph.Bar([(10, 0)], ["data1"], label="Bar Const 1")
+b2 = graph.Bar([(20, 0)], ["data2"])
+b3 = graph.Bar([(30, 0)], ["data3"])
+const = sb.plan_graph(
+    graph.BarGraph(
+        [b1,b2,b3],
+        width=0.5,
+        out="consttest.svg",
+        style="hatch_a",
+    )
+)
+
+b1 = graph.BarGroup([(10, 0), (20, 0), (30, 0)], "data1", label=["G1", "G2", "G3"])
+const = sb.plan_graph(
+    graph.BarGraph(
+        [b1],
+        width=0.5,
+        out="constgrouptest.svg",
+        style="hatch_a",
+    )
+)
+
+line1 = graph.Line(200, "low")
+line2 = graph.Line(exec, "mid", x="x", label="Mid Label")
+line3 = graph.Line(exec, "high", x="x", label="High Label")
+
+cdf_graph = sb.plan_graph(
+    graph.LineGraph(
+        [line1, line2, line3],
+        restrict_on={
+            "pass_me_in": 0,
+        },
+        type="cdf",
+        style="line_a",
+        out="constline.svg",
     )
 )
 

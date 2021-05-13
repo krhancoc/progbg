@@ -28,6 +28,9 @@ class Bar(GraphObject):
     The keys within the `core.Metrics` are used to compose bars.  You may select just one.
     But optionally you may compose bars of many metrics (See matplotlibs stacked bar).
 
+    Bars can be handed constant values instead of executions in the form of a tuple =>
+    (MEAN, STD), see the example below.
+
     Arguments:
         wl (Execution, List):  Execution object or list for constant values
         composed_of (List): A key for the data to use, or optionally a list of keys
@@ -41,7 +44,8 @@ class Bar(GraphObject):
         >>> b1 = Bar(e1, ["data1", "data2"])
         >>>
         >>> # Below Bar: data1 = 10, data2 = 22
-        >>> b1 = Bar([10, 22], ["data1", "data2"])
+        >>> # Tuples are in the form of (MEAN, STD)
+        >>> b1 = Bar([(10, 0), (22, 0)], ["data1", "data2"])
     """
 
     def __init__(self, wl, composed_of, label=None):
@@ -50,7 +54,8 @@ class Bar(GraphObject):
         if isinstance(wl, list):
             d = dict()
             for i, x in enumerate(self.composed):
-                d[x] = wl[i]
+                d[x] = wl[i][0]
+                d[x + "_std"] = wl[i][1]
             wl = ExecutionStub(**d)
         self.workload = wl
         self.label = label
@@ -73,7 +78,7 @@ class BarGroup(GraphObject):
     """Groups Data as bars on single value
 
     Arguments:
-        executions (List): List of executions to include in group
+        executions (List): List of executions to include in group, or tuple
         cat (str): category to compare the workloads
         label (List[str]): Labels for the elements in the group
 
@@ -83,7 +88,7 @@ class BarGroup(GraphObject):
         >>> e3 = plan_execution(...)
         >>>
         >>> b1 = BarGroup([e1, e2, e3], "data1", ["exec1", "exec2", "exec3"])
-        >>> b2 = BarGroup([e1, 20, e3], "data1", ["exec1", "normal", "exec3"])
+        >>> b2 = BarGroup([e1, (20, 0), e3], "data1", ["exec1", "normal", "exec3"])
     """
 
     def __init__(self, executions, cat, label):
@@ -94,7 +99,7 @@ class BarGroup(GraphObject):
     def get_data(self, restrict_on):
         bars = []
         for i, w in enumerate(self.wls):
-            bars.append(Bar(w, [self.cat], [self.label[i]]))
+            bars.append(Bar([w], [self.cat], [self.label[i]]))
         dfs = [b.get_data(restrict_on).T for b in bars]
         return dfs
 

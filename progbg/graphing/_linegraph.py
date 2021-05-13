@@ -17,28 +17,6 @@ from ..util import Backend, retrieve_obj, error
 from ..util import ExecutionStub
 from ..style import get_style, set_style, get_style_cycler
 
-
-class ConstLine(GraphObject):
-    """Const Line Object
-    Will plot a horizontal line
-
-    Arguments:
-        value: Value for constant line, either a workload or straight number
-        label (str): Label for the line
-        index: Label used for the value's index. Used when comparing against other lines
-    """
-
-    def __init__(self, value, label, index, style=":"):
-        self.label = label
-        self.value = value
-        self.index = index
-        self.style = style
-
-    def get_data(self, restrict_on):
-        val = self.value._cached[0].get_stats()[self.index]
-        return (self.label, val)
-
-
 class Line(GraphObject):
     """Line Object
     Used to specify a line within a graph.
@@ -61,19 +39,24 @@ class Line(GraphObject):
         >>> # In below line object, line at point 0 will specify e1["data1"],
         >>> # 1 will specify e2["data1"], and 2 will specify e3["data1"]
         >>> l2 = Line([e1, e2, e3], "data1", x=[0, 1, 2])
+        >>> l3 = Line([e1, (20, 2), e3], "data1", x=[0, 1, 2])
+        >>> # Using a single integer or flat specifies a constant line on the graph
+        >>> l4_constant = Line(100, "data1")
     """
 
-    def __init__(self, execution, value: str, x=None, label: str = None, style="--"):
+    def __init__(self, execution, value: str, 
+            x=None, label: str = None, 
+            style="--", color=None):
         if label:
             self.label = label
         else:
             self.label = value
         self.value = value
+        self.color = color
+
         self.workload = execution
         self.x = x
         self.style = style
-        assert x is not None, "x must be specified"
-
         if isinstance(x, str):
             assert not isinstance(
                 x, list
@@ -81,26 +64,37 @@ class Line(GraphObject):
 
         if isinstance(x, list):
             assert len(x) == len(
-                workload
-            ), "When x is a list, workload list length must equal x list length"
+               execution 
+            ), "When x is a list, execution list length must equal x list length"
 
     def get_data(self, restrict_on, iter=None):
+        # Check is list of elements
         d = {self.label: [], self.label + "_std": []}
         if isinstance(self.workload, list):
             for x in self.workload:
-                d[self.label].append(x._cached[0].get_stats()[self.value])
-                d[self.label + "_std"].append(
-                    x._cached[0].get_stats()[self.value + "_std"]
-                )
+                if isinstance(x, tuple):
+                    d[self.label].append(x[0])
+                    d[self.label + "_std"].append(x[1])
+                else:
+                    d[self.label].append(x._cached[0].get_stats()[self.value])
+                    d[self.label + "_std"].append(
+                        x._cached[0].get_stats()[self.value + "_std"]
+                    )
 
             return pd.DataFrame(d, index=self.x)
         else:
-            metrics = filter(self.workload._cached, restrict_on)
-            dicts = [d.get_stats() for d in metrics]
-            df = pd.DataFrame(dicts)
-            df = df.groupby([self.x])
+            if isinstance(self.workload, int):
+                d[self.label] = self.workload
+                d[self.label + "_std"] = 0
 
-            return pd.DataFrame(df.mean()[[self.value, self.value + "_std"]])
+                return pd.DataFrame(d, index=["CONSTANT"])
+            else:
+                metrics = filter(self.workload._cached, restrict_on)
+                dicts = [d.get_stats() for d in metrics]
+                df = pd.DataFrame(dicts)
+                df = df.groupby([self.x])
+
+                return pd.DataFrame(df.mean()[[self.value, self.value + "_std"]])
 
 
 class LineGraph(Graph):
@@ -160,46 +154,34 @@ class LineGraph(Graph):
         for prop, default in default_options.items():
             setattr(self, prop, kwargs.get(prop, default))
 
-        self.consts = []
-        self.workloads = []
-        for c in lines:
-            if isinstance(c, ConstLine):
-                self.consts.append(c)
-            else:
-                self.workloads.append(c)
-
+        self.workloads = lines
         self.html_out = ".".join(self.out.split(".")[:-1]) + ".svg"
 
     def _graph(self, ax, data):
-        # Hack for dealing with const lines.
-        consts = [x.get_data(self._restrict_on) for x in self.consts]
-        vals = [x for x in data[0].T.columns]
-        styles = [x.style for x in self.workloads]
-        styles_consts = [x.style for x in self.consts]
-
-        # Combine data
-        data = pd.concat(data, axis=1)
-        consts = [pd.DataFrame({c[0]: [c[1]] * len(vals)}, index=vals) for c in consts]
-        if len(consts):
-            consts = pd.concat(consts, axis=1)
-
-        # Pull out the standard deviation and such
-        cols = [c for c in data.columns if c[-4:] != "_std"]
-        cols_std = [c for c in data.columns if len(c) > 4 and c[-4:] == "_std"]
-        d = data[cols]
-        std = data[cols_std]
-        std.columns = [x[:-4] for x in std.columns]
-        y = [x for x in d.T.columns]
-
         # It seems like styles is not respected setting them so we will manually do them
         style = iter(get_style_cycler())
-        for i, x in enumerate(d.columns):
+        for d in data:
             tmp = next(style)
-            if self.std:
-                ax.errorbar(y, d[x].tolist(), yerr=std[x], **tmp)
+            # Filter out std and regular data columns
+            cols = [c for c in d.columns if c[-4:] != "_std"]
+            cols_std = [c for c in d.columns if c[-4:] == "_std"]
+            x = d[cols]
+            x_std = d[cols_std]
+
+            # Since we are lines should only have one value in each column
+            lab = [ c for c in x.columns ][0]
+            lab_std = [ c for c in x_std.columns ][0]
+
+            # Check for constant label
+            if "CONSTANT" in d.index:
+                val = x.iloc[0][lab]
+                ax.axhline(y=val, **tmp)
             else:
-                ax.plot(y, d[x].tolist(), styles[i], **tmp)
-        if len(consts):
-            for i, x in enumerate(consts.columns):
-                tmp = next(style)
-                ax.plot(y, consts[x].tolist(), **tmp)
+                y = [x for x in d.T.columns]
+                # Extract lists from the dataframe
+                x_list = [x.loc[v][lab] for v in y ]
+                x_std_list = [x_std.loc[v][lab_std] for v in y ]
+                if self.std:
+                    ax.errorbar(y, x_list, yerr=x_std_list, **tmp)
+                else:
+                    ax.plot(y, x_list, **tmp)
