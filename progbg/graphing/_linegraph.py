@@ -81,7 +81,7 @@ class Line(GraphObject):
 
         if isinstance(x, list):
             assert len(x) == len(
-                workload
+                self.workload
             ), "When x is a list, workload list length must equal x list length"
 
     def get_data(self, restrict_on, iter=None):
