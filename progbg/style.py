@@ -14,7 +14,8 @@ not support hatches and colors cause I find this distracts readers of the data, 
 import matplotlib as mpl
 from cycler import cycler, Cycler
 
-mpl.use("pgf")
+#mpl.use("pgf")
+mpl.use("Agg")
 
 _color_styles = dict(
     a=[
@@ -62,9 +63,9 @@ progbg_default_style = {
     "ytick.labelsize": 9,
     "legend.fontsize": 8,
     "figure.titlesize": 10,
-    "pgf.texsystem": "pdflatex",
-    "pgf.rcfonts": False,
-    "text.usetex": True,
+    #"pgf.texsystem": "pdflatex",
+    #"pgf.rcfonts": False,
+    #"text.usetex": True,
     "errorbar.capsize": 1,
 }
 

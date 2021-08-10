@@ -185,6 +185,8 @@ class BarGraph(Graph):
             data = pd.concat(data, axis=1)
             cols = [c for c in data.columns if c[-4:] != "_std"]
             cols_std = [c for c in data.columns if len(c) > 4 and c[-4:] == "_std"]
+            cols = list(set(cols))
+            cols_std = list(set(cols_std))
             df = data[cols].T
             std = data[cols_std]
             std.columns = [x[:-4] for x in std.columns]
