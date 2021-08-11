@@ -1,20 +1,22 @@
 """Common utility formatters used by Graphs"""
 
 from matplotlib.ticker import FuncFormatter
+from functools import partial
 
-
-def set_yrange(min=None, max=None):
-    def tmp(fig, axes):
+def set_yrange(m1, m2):
+    # Don't know why we lose the reference to m1 and m2 in this temporary function. This is a temporary function
+    # to bind arguments to the tmp function.
+    def tmp(m1, m2, fig, axes):
         x, y = axes.get_ylim()
-        if min is None:
-            min = x
+        if m1 is None:
+            m1 = x
 
-        if max is None:
-            max = y
+        if m2 is None:
+            m2 = y
 
-        axes.set_ylim(min, max)
+        axes.set_ylim(m1, m2)
 
-    return tmp
+    return partial(tmp, m1, m2)
 
 
 def set_size(w, h):
