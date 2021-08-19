@@ -19,6 +19,12 @@ def set_yrange(m1, m2):
     return partial(tmp, m1, m2)
 
 
+def set_title(title):
+    def t(fig, axes):
+        axes.set_title(title)
+    return t
+
+
 def set_size(w, h):
     def format(fig, axes):
         fig.set_figheight(h)
@@ -75,8 +81,8 @@ def xaxis_formatter(label="", tf=None):
 
 def legend_remap(d):
     def tmp(fig, axes):
-        h, labels = ax.get_legend_handles_labels()
+        h, labels = axes.get_legend_handles_labels()
         l = [d[l] for l in labels]
-        ax.legend(h, l)
+        axes.legend(h, l)
 
     return tmp
