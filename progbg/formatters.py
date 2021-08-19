@@ -60,7 +60,7 @@ def _axis_formatter(type, label="", tf=None):
 
     def format(fig, axes):
         getattr(axes, type).set_major_formatter(FuncFormatter(tmp_num(tf)))
-        axes.set_ylabel(label)
+        getattr(axes, "set_" + type[0] + "label")(label)
 
     return format
 
