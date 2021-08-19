@@ -815,7 +815,7 @@ class Figure:
             ax = fig.add_subplot(gs[v[2] : v[3] + 1, v[0] : v[1] + 1])
             k.graph(fig, ax)
 
-        fig.tight_layout()
+        #fig.tight_layout()
 
         out = os.path.join(GRAPHS_DIR, self.out)
         plt.savefig(out)
@@ -906,7 +906,7 @@ def execute_plan(plan: str, args):
         fig, axes = plt.subplots(figsize=DEFAULT_SIZE)
         graph.graph(fig, axes)
         out = os.path.join(GRAPHS_DIR, graph.out)
-        fig.tight_layout()
+        #fig.tight_layout()
         fig.subplots_adjust(left=0.35, right=0.95)
         plt.savefig(out)
         out = os.path.join(GRAPHS_DIR, graph.html_out)
