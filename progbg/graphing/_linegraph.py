@@ -196,10 +196,10 @@ class LineGraph(Graph):
         for i, x in enumerate(d.columns):
             tmp = next(style)
             if self.std:
-                ax.errorbar(y, d[x].tolist(), yerr=std[x], **tmp)
+                ax.errorbar(y, d[x].tolist(), yerr=std[x], **tmp, label=x)
             else:
-                ax.plot(y, d[x].tolist(), styles[i], **tmp)
+                ax.plot(y, d[x].tolist(), styles[i], **tmp, label=x)
         if len(consts):
             for i, x in enumerate(consts.columns):
                 tmp = next(style)
-                ax.plot(y, consts[x].tolist(), **tmp)
+                ax.plot(y, consts[x].tolist(), **tmp, label=x)
