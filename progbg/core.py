@@ -11,7 +11,7 @@ import os
 import sys
 import importlib
 import inspect
-#import sqlite3
+import sqlite3
 
 import types
 import subprocess
