@@ -23,7 +23,7 @@ def set_size(w, h):
     def format(fig, axes):
         fig.set_figheight(h)
         fig.set_figwidth(w)
-        fig.tight_layout()
+        #fig.tight_layout()
 
     return format
 
