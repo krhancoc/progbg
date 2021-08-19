@@ -907,6 +907,7 @@ def execute_plan(plan: str, args):
         graph.graph(fig, axes)
         out = os.path.join(GRAPHS_DIR, graph.out)
         #fig.tight_layout()
+        fig.legend()
         fig.subplots_adjust(left=0.35, right=0.95)
         plt.savefig(out)
         out = os.path.join(GRAPHS_DIR, graph.html_out)
