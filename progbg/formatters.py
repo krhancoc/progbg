@@ -83,6 +83,6 @@ def legend_remap(d):
     def tmp(fig, axes):
         h, labels = axes.get_legend_handles_labels()
         l = [d[l] for l in labels]
-        axes.legend(h, l)
+        # axes.legend(h, l)
 
     return tmp
